@@ -9,11 +9,13 @@ const KEYWORDS: &'static [&'static str; 32] = &["AND", "ARRAY", "BEGIN", "CASE",
 "NOT", "OF", "OR", "POINTER", "PROCEDURE", "PROGRAM", "RECORD", "REPEAT", "SET", "THEN", 
 "TO", "TYPE", "UNTIL", "VAR", "WHILE", "WITH"];
 
+// Vector de símbolos. Irá salvar os identificadores encontrados
 fn cria_tabela_de_simbolos() -> Vec<String>{
 	let vec: Vec<String> = Vec::with_capacity(1000);
 	return vec;
 }
 
+// abre arquivo contendo o programa-fonte em código-fonte Pascal
 fn abre_arquivo(filename: &str){
 	let st = cria_tabela_de_simbolos();
 
