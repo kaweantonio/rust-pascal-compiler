@@ -1,0 +1,23 @@
+program exampleControlFlow;
+begin
+    if 20 = 5 then
+        begin
+            writeln('unreachable');
+        end
+    else if 5 + 7 < 30 then
+        begin
+            writeln('this will print');
+        end
+    else if not true then
+        begin
+            writeln('this will not print');
+        end
+    else if 20 <> 5 then
+        begin
+            writeln('<> means not equal');
+        end
+    else
+        begin
+            writeln('this will not print');
+        end
+end.
