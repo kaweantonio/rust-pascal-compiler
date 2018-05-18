@@ -1,5 +1,6 @@
 program exampleControlFlow;
 begin
+    // comentário
     if 20 = 5 then
         begin
             writeln('unreachable');
