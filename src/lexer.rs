@@ -33,7 +33,7 @@ pub enum Tokens {
     While,
     With,
     Write,
-    
+
     // Tipos de variável
     True,
     False,
@@ -43,7 +43,7 @@ pub enum Tokens {
     Inteiro,
     Float,
 
-    // Símbolos de pontuação
+    // Símbolos de Pontuação
     AbreParenteses, // (
     FechaParenteses, // )
     AbreColchete, // [
@@ -120,7 +120,7 @@ fn TabelaSimbolos<'a>() -> Vec<Vec::<String>> {
 
 fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
     let mut classificado = false;
-    let num_tokens = tabela.len(); // número de tokens no Vector 
+    let num_tokens = tabela.len(); // número de tokens no Vector
 
     unsafe {
         let mut prox_token = Token {
@@ -139,7 +139,11 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                 lin: 0,
                 col: 0
             };
+
             // verifica se é reservada
+            /* (Aqui não é interessante incluir os símbolos de pontuação, relação e aritmeticos?)
+                Digo isto pois são strings menores e possuem menor tempo de verificação,
+                talvez tenha um desempenho melhor?*/
             match token.to_lowercase().as_ref() {
                 "and" => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::And, lin: linha, col: 0};
@@ -253,11 +257,27 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Write, lin: linha, col: 0};
                     classificado = true
                 },
+
+
+
                 _ => classificado = false,
             }
 
-            if (classificado == false){
-                prox_token = Token{tok: token.to_string(), tipo: Tokens::Identificador, lin: linha, col: 0};
+            if classificado == false {
+
+                //verificar se é um Inteiro (acho interessante mudar o nome do token para Numero)
+                let str = token.to_string();
+                let inteiro = str.parse::<i64>();
+                match inteiro {
+                    Ok(val) => {prox_token = Token{tok: token.to_string(), tipo: Tokens::Inteiro, lin: linha, col: 0};
+                    classificado = true},
+                    Err(why) => classificado = false,
+                };
+
+                //classifica como Identificador
+                if classificado == false {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Identificador, lin: linha, col: 0};
+                }
             }
 
             aux.push(prox_token);
