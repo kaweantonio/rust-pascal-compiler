@@ -84,7 +84,7 @@ pub struct Token {
     pub col: i32,
 }
 
-fn TabelaSimbolos<'a>() -> Vec<Vec::<String>> {
+fn TabelaSimbolos<'a>() -> Vec<Vec<String>> {
     let mut file = File::open("src/input.txt").expect("Não foi possível abrir o arquivo");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Não foi possível ler o arquivo");
