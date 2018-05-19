@@ -9,15 +9,19 @@ pub enum Tokens {
     Array,
     Asm,
     Begin,
+    Boolean,
     Case,
+    Char,
     Const,
     Div,
     Do,
     Else,
     End,
+    False,
     For,
     Function,
     If,
+    Integer,
     Not,
     Of,
     Or,
@@ -27,6 +31,7 @@ pub enum Tokens {
     Reservada_String,
     Then,
     To,
+    True,
     Type,
     Until,
     Var,
@@ -35,13 +40,8 @@ pub enum Tokens {
     Write,
 
     // Tipos de variável
-    True,
-    False,
-    Char,
-    Tipo_String,
     Identificador,
-    Inteiro,
-    Float,
+    Numero,
 
     // Símbolos de Pontuação
     AbreParenteses, // (
