@@ -66,12 +66,15 @@ pub enum Tokens {
     MenorIgual, // <=
     MaiorIgual, // >=
 
-    // Símbolos Aritméticos
+    // Símbolos Aritméticos e Numéricos
     Mais, // +
     Menos, // -
     Multiplicacao, // *
     Divisao, // /
     Modulo, // %
+    Dolar, // $
+    EComercial, // &
+
 
     Comentario,
 }
@@ -128,7 +131,7 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
 
     let simbolos_relacao = vec!["=", "<>", "<", ">", "<=", ">="];
 
-    let simbolos_aritmeticos = vec!["+", "-", "*", "/", "%"];
+    let simbolos_aritmeticos = vec!["+", "-", "*", "/", "%", "$", "&"];
 
     unsafe {
         let mut prox_token = Token {
@@ -351,6 +354,12 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     },
                     "%" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Modulo, lin: linha, col: 0};
+                    },
+                    "$" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Dolar, lin: linha, col: 0};
+                    },
+                    "&" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::EComercial, lin: linha, col: 0};
                     },
 
                     _ => ()
