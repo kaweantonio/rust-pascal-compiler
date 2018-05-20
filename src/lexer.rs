@@ -1,6 +1,7 @@
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
+use std::sync::Mutex;
 
 #[derive(Debug, Clone)]
 pub enum Tokens {
@@ -100,6 +101,10 @@ pub struct Token {
     pub tipo: Tokens,
     pub lin: i32,
     pub col: i32,
+}
+
+lazy_static! {
+    pub static ref tabelaToken: Mutex<Vec<Vec<Token>>> = Mutex::new(vec![Vec::<Token>::new()]);
 }
 
 fn TabelaSimbolos<'a>() -> Vec<Vec<String>> {
@@ -420,10 +425,8 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
     }
 }
 
-pub fn Lexico() -> Vec<Vec::<Token>>{
+pub fn Lexico() {
     let mut result = TabelaSimbolos();
-
-    let mut tabelaToken = vec![Vec::<Token>::new()];
 
     println!("{:?}",result);
     println!("\n\n");
@@ -431,17 +434,18 @@ pub fn Lexico() -> Vec<Vec::<Token>>{
     for i in 0..result.len(){
         let aux = AnalisaLexico(&mut result[i], (i+1) as i32);
 
-        tabelaToken.push(aux)
+        tabelaToken.lock().unwrap().push(aux)
     }
 
     println!("\n\n");
 
-    for i in 1..tabelaToken.len(){
-        println!("Linha: {0}", i);
-        for j in 0..tabelaToken[i].len(){
-            println!("{:?}", tabelaToken[i][j]);
+    unsafe {
+        let data = tabelaToken.lock().unwrap();
+        for i in 0..data.len(){
+            println!("Linha: {0}", i);
+            for j in 0..data[i].len(){
+                println!("{:?}", data[i][j]);
+            }
         }
     }
-
-    return tabelaToken;
 }

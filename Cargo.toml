@@ -7,3 +7,4 @@ authors = ["Kawe Antônio Marcelino, Marcelo Nuñez"]
 description = "Compilador Pascal em Rust"
 
 [dependencies]
+lazy_static = "1.0.0"
