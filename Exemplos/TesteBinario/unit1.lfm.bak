@@ -1,0 +1,18 @@
+object Form1: TForm1
+  Left = 532
+  Height = 240
+  Top = 302
+  Width = 320
+  Caption = 'Form1'
+  ClientHeight = 240
+  ClientWidth = 320
+  LCLVersion = '1.6.0.4'
+  object SpeedButton1: TSpeedButton
+    Left = 80
+    Height = 104
+    Top = 24
+    Width = 160
+    Caption = 'Botão Místico'
+    OnClick = SpeedButton1Click
+  end
+end
