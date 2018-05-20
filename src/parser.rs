@@ -14,11 +14,12 @@ pub enum Terminais {
 }
 
 pub fn Sintatico(){
-    let val = lexer::tabelaToken.lock().unwrap().len();
+    let tabelaToken = lexer::Lexico();
+    let val = tabelaToken.len();
 
     for i in 0..val {
 
-        let ref temp = lexer::tabelaToken..lock().unwrap()[i];
+        let ref temp = tabelaToken[i];
 
         println!("{:?}",*temp);
 

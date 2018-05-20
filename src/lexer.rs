@@ -21,7 +21,7 @@ pub enum Tokens {
     False,
     File,
     For,
-    Foward,
+    Forward,
     Function,
     Goto,
     If,
@@ -420,7 +420,7 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
     }
 }
 
-pub fn Lexico() {
+pub fn Lexico() -> Vec<Vec::<Token>>{
     let mut result = TabelaSimbolos();
 
     let mut tabelaToken = vec![Vec::<Token>::new()];
@@ -442,4 +442,6 @@ pub fn Lexico() {
             println!("{:?}", tabelaToken[i][j]);
         }
     }
+
+    return tabelaToken;
 }
