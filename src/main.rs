@@ -1,5 +1,7 @@
-mod lexer;
+pub mod lexer;
+mod parser;
 
 fn main() {
-    lexer::Lexico();
+    parser::Sintatico();
+    //lexer::Lexico();
 }
