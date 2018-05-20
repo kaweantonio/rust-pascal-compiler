@@ -15,19 +15,34 @@ pub enum Tokens {
     Const,
     Div,
     Do,
+    Downto,
     Else,
     End,
     False,
+    File,
     For,
+    Foward,
     Function,
+    Goto,
     If,
+    In,
+    Inline,
     Integer,
+    Label,
+    Mod,
+    Nil,
     Not,
+    Object,
     Of,
     Or,
+    Packed,
     Procedure,
     Program,
     Read,
+    Real,
+    Record,
+    Repeat,
+    Set,
     Reservada_String,
     Then,
     To,
@@ -124,7 +139,7 @@ fn TabelaSimbolos<'a>() -> Vec<Vec<String>> {
 fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
     let num_tokens = tabela.len(); // número de tokens no Vector
 
-    let palavras_reservadas = vec!["and", "array", "asm", "begin", "boolean", "case", "char", "const", "div", "do", "else", "end", "false", "for", "function", "if", "integer", "not", "of", "or", "procedure", "program", "read", "string", "then", "to", "true", "type", "until", "var", "while", "with", "write"];
+    let palavras_reservadas = vec!["and", "array", "asm", "begin", "boolean", "case", "char", "const", "div", "do", "downto", "else", "end", "false", "file", "for", "forward", "function", "goto", "if", "in", "inline", "integer", "label","mod", "nil", "not", "object", "of", "or", "packed", "procedure", "program", "read", "real", "record", "repeat", "set", "string", "then", "to", "true", "type", "until", "var", "while", "with", "write"];
 
     let simbolos_pontuacao = vec!["(", ")", "[", "]", ":=", ".", ",", ";", ":", "..", "\'", "\""];
 
@@ -165,8 +180,14 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     "begin" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Begin, lin: linha, col: 0};
                     },
+                    "boolean" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Boolean, lin: linha, col: 0};
+                    },
                     "case" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Case, lin: linha, col: 0};
+                    },
+                    "char" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Char, lin: linha, col: 0};
                     },
                     "const" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Const, lin: linha, col: 0};
@@ -177,29 +198,68 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     "do" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Do, lin: linha, col: 0};
                     },
+                    "downto" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Downto, lin: linha, col: 0};
+                    },
                     "else" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Else, lin: linha, col: 0};
                     },
                     "end" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::End, lin: linha, col: 0};
                     },
+                    "false" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::False, lin: linha, col: 0};
+                    },
+                    "file" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::File, lin: linha, col: 0};
+                    },
                     "for" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::For, lin: linha, col: 0};
+                    },
+                    "forward" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Forward, lin: linha, col: 0};
                     },
                     "function" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Function, lin: linha, col: 0};
                     },
+                    "goto" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Goto, lin: linha, col: 0};
+                    },
                     "if" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::If, lin: linha, col: 0};
                     },
+                    "in" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::In, lin: linha, col: 0};
+                    },
+                    "inline" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Inline, lin: linha, col: 0};
+                    },
+                    "integer" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Integer, lin: linha, col: 0};
+                    },
+                    "label" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Label, lin: linha, col: 0};
+                    },
+                    "mod" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Mod, lin: linha, col: 0};
+                    },
+                    "nil" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Nil, lin: linha, col: 0};
+                    },
                     "not" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Not, lin: linha, col: 0};
+                    },
+                    "object" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Object, lin: linha, col: 0};
                     },
                     "of" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Of, lin: linha, col: 0};
                     },
                     "or" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Or, lin: linha, col: 0};
+                    },
+                    "packed" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Packed, lin: linha, col: 0};
                     },
                     "procedure" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Procedure, lin: linha, col: 0};
@@ -210,6 +270,18 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     "read" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Read, lin: linha, col: 0};
                     },
+                    "real" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Real, lin: linha, col: 0};
+                    },
+                    "record" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Record, lin: linha, col: 0};
+                    },
+                    "repeat" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Repeat, lin: linha, col: 0};
+                    },
+                    "set" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Set, lin: linha, col: 0};
+                    },
                     "string" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Reservada_String, lin: linha, col: 0};
                     },
@@ -218,6 +290,9 @@ fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     },
                     "to" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::To, lin: linha, col: 0};
+                    },
+                    "true" => {
+                        prox_token = Token{tok: token.to_string(), tipo: Tokens::True, lin: linha, col: 0};
                     },
                     "type" => {
                         prox_token = Token{tok: token.to_string(), tipo: Tokens::Type, lin: linha, col: 0};
