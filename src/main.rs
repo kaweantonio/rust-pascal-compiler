@@ -4,6 +4,6 @@ pub mod lexer;
 mod parser;
 
 fn main() {
-    parser::Sintatico();
+    parser::ASD();
     //lexer::Lexico();
 }

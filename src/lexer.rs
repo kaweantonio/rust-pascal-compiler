@@ -1,9 +1,10 @@
-use std::io;
+// use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::sync::Mutex;
+use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Tokens {
     // palavras reservadas
     And,
@@ -44,7 +45,7 @@ pub enum Tokens {
     Record,
     Repeat,
     Set,
-    Reservada_String,
+    ReservadaString,
     Then,
     To,
     True,
@@ -90,12 +91,98 @@ pub enum Tokens {
     Modulo, // %
     Dolar, // $
     EComercial, // &
+    FatorEscala, // E | e
 
 
     Comentario,
 }
 
-#[derive(Debug)]
+impl fmt::Display for Tokens {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            Tokens::And => "And",
+            Tokens::Array => "Array",
+            Tokens::Asm => "Asm",
+            Tokens::Begin => "Begin",
+            Tokens::Boolean => "Boolean",
+            Tokens::Case => "Case",
+            Tokens::Char => "Char",
+            Tokens::Const => "Const",
+            Tokens::Div => "Div",
+            Tokens::Do => "Do",
+            Tokens::Downto => "Downto",
+            Tokens::Else => "Else",
+            Tokens::End => "End",
+            Tokens::False => "False",
+            Tokens::File => "File",
+            Tokens::For => "For",
+            Tokens::Forward => "Forward",
+            Tokens::Function => "Function",
+            Tokens::Goto => "Goto",
+            Tokens::If => "If",
+            Tokens::In => "In",
+            Tokens::Inline => "Inline",
+            Tokens::Integer => "Integer",
+            Tokens::Label => "Label",
+            Tokens::Mod => "Mod",
+            Tokens::Nil => "Nil",
+            Tokens::Not => "Not",
+            Tokens::Object => "Object",
+            Tokens::Of => "Of",
+            Tokens::Or => "Or",
+            Tokens::Packed => "Packed",
+            Tokens::Procedure => "Procedure",
+            Tokens::Program => "Program",
+            Tokens::Read => "Read",
+            Tokens::Real => "Real",
+            Tokens::Record => "Record",
+            Tokens::Repeat => "Repeat",
+            Tokens::Set => "Set",
+            Tokens::ReservadaString => "String",
+            Tokens::Then => "Then",
+            Tokens::To => "To",
+            Tokens::True => "True",
+            Tokens::Type => "Type",
+            Tokens::Until => "Until",
+            Tokens::Var => "Var",
+            Tokens::While => "While",
+            Tokens::With => "With",
+            Tokens::Write => "Write",
+            Tokens::Identificador => "Identificador",
+            Tokens::Numero => "Numero",
+            Tokens::AbreParenteses => "(",
+            Tokens::FechaParenteses => ")",
+            Tokens::AbreColchete => "[",
+            Tokens::FechaColchete => "]",
+            Tokens::Atribuicao => ":=",
+            Tokens::Ponto => ".",
+            Tokens::Virgula => ",",
+            Tokens::PontoVirgula => ";",
+            Tokens::DoisPontos => ":",
+            Tokens::PontoPonto => "..",
+            Tokens::Apostrofo => "\'",
+            Tokens::Aspas => "\"",
+            Tokens::Igual => "=",
+            Tokens::Diferente => "<>",
+            Tokens::Menor => "<",
+            Tokens::Maior => ">",
+            Tokens::MenorIgual => "<=",
+            Tokens::MaiorIgual => ">=",
+            Tokens::Mais => "+",
+            Tokens::Menos => "-",
+            Tokens::Multiplicacao => "*",
+            Tokens::Divisao => "/",
+            Tokens::Modulo => "%",
+            Tokens::Dolar => "$",
+            Tokens::EComercial => "&",
+            Tokens::FatorEscala => "E ou e",
+            Tokens::Comentario => "",
+        };
+        write!(f, "{}", printable)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub tok: String,
     pub tipo: Tokens,
@@ -103,11 +190,29 @@ pub struct Token {
     pub col: i32,
 }
 
+impl Token {
+    pub fn new() -> Token {
+        Token {
+            tok: ("").to_string(),
+            tipo: Tokens::Comentario,
+            lin: 0,
+            col: 0
+        }
+    }
+}
+
+static PALAVRAS_RESERVADAS: &'static [&'static str] = &["and", "array", "asm", "begin", "boolean", "case", "char", "const", "div", "do", "downto", "else", "end", "false", "file", "for", "forward", "function", "goto", "if", "in", "inline", "integer", "label","mod", "nil", "not", "object", "of", "or", "packed", "procedure", "program", "read", "real", "record", "repeat", "set", "string", "then", "to", "true", "type", "until", "var", "while", "with", "write"];
+
+static SIMBOLOS_PONTUACAO: &'static [&'static str] = &["(", ")", "[", "]", ":=", ".", ",", ";", ":", "..", "\'", "\""];
+static SIMBOLOS_RELACAO: &'static [&'static str] = &["=", "<>", "<", ">", "<=", ">="];
+
+static SIMBOLOS_ARITMETICOS: &'static [&'static str] = &["+", "-", "*", "/", "%", "$", "&"];
+
 lazy_static! {
     pub static ref tabelaToken: Mutex<Vec<Vec<Token>>> = Mutex::new(vec![Vec::<Token>::new()]);
 }
 
-fn TabelaSimbolos<'a>() -> Vec<Vec<String>> {
+fn tabelaSimbolos<'a>() -> Vec<Vec<String>> {
     let mut file = File::open("src/input.txt").expect("Não foi possível abrir o arquivo");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Não foi possível ler o arquivo");
@@ -141,311 +246,342 @@ fn TabelaSimbolos<'a>() -> Vec<Vec<String>> {
     return aux;
 }
 
-fn AnalisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
+fn analisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
     let num_tokens = tabela.len(); // número de tokens no Vector
 
-    let palavras_reservadas = vec!["and", "array", "asm", "begin", "boolean", "case", "char", "const", "div", "do", "downto", "else", "end", "false", "file", "for", "forward", "function", "goto", "if", "in", "inline", "integer", "label","mod", "nil", "not", "object", "of", "or", "packed", "procedure", "program", "read", "real", "record", "repeat", "set", "string", "then", "to", "true", "type", "until", "var", "while", "with", "write"];
+    let mut prox_token;
+    let mut aux = Vec::<Token>::new();
 
-    let simbolos_pontuacao = vec!["(", ")", "[", "]", ":=", ".", ",", ";", ":", "..", "\'", "\""];
-
-    let simbolos_relacao = vec!["=", "<>", "<", ">", "<=", ">="];
-
-    let simbolos_aritmeticos = vec!["+", "-", "*", "/", "%", "$", "&"];
-
-    unsafe {
-        let mut prox_token = Token {
+    for token in tabela{
+        prox_token = Token {
             tok: ("").to_string(),
             tipo: Tokens::Comentario,
             lin: 0,
             col: 0
         };
 
-        let mut aux = Vec::<Token>::new();
+        // verifica se é reservada
+        if PALAVRAS_RESERVADAS.contains(&(token.to_lowercase().as_str())){
+            match token.to_lowercase().as_ref() {
+                "and" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::And, lin: linha, col: 0};
+                },
+                "array" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Array, lin: linha, col: 0};
+                },
+                "asm" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Asm, lin: linha, col: 0};
+                },
+                "begin" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Begin, lin: linha, col: 0};
+                },
+                "boolean" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Boolean, lin: linha, col: 0};
+                },
+                "case" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Case, lin: linha, col: 0};
+                },
+                "char" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Char, lin: linha, col: 0};
+                },
+                "const" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Const, lin: linha, col: 0};
+                },
+                "div" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Div, lin: linha, col: 0};
+                },
+                "do" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Do, lin: linha, col: 0};
+                },
+                "downto" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Downto, lin: linha, col: 0};
+                },
+                "else" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Else, lin: linha, col: 0};
+                },
+                "end" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::End, lin: linha, col: 0};
+                },
+                "false" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::False, lin: linha, col: 0};
+                },
+                "file" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::File, lin: linha, col: 0};
+                },
+                "for" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::For, lin: linha, col: 0};
+                },
+                "forward" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Forward, lin: linha, col: 0};
+                },
+                "function" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Function, lin: linha, col: 0};
+                },
+                "goto" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Goto, lin: linha, col: 0};
+                },
+                "if" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::If, lin: linha, col: 0};
+                },
+                "in" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::In, lin: linha, col: 0};
+                },
+                "inline" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Inline, lin: linha, col: 0};
+                },
+                "integer" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Integer, lin: linha, col: 0};
+                },
+                "label" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Label, lin: linha, col: 0};
+                },
+                "mod" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Mod, lin: linha, col: 0};
+                },
+                "nil" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Nil, lin: linha, col: 0};
+                },
+                "not" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Not, lin: linha, col: 0};
+                },
+                "object" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Object, lin: linha, col: 0};
+                },
+                "of" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Of, lin: linha, col: 0};
+                },
+                "or" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Or, lin: linha, col: 0};
+                },
+                "packed" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Packed, lin: linha, col: 0};
+                },
+                "procedure" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Procedure, lin: linha, col: 0};
+                },
+                "program" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Program, lin: linha, col: 0};
+                },
+                "read" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Read, lin: linha, col: 0};
+                },
+                "real" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Real, lin: linha, col: 0};
+                },
+                "record" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Record, lin: linha, col: 0};
+                },
+                "repeat" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Repeat, lin: linha, col: 0};
+                },
+                "set" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Set, lin: linha, col: 0};
+                },
+                "string" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::ReservadaString, lin: linha, col: 0};
+                },
+                "then" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Then, lin: linha, col: 0};
+                },
+                "to" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::To, lin: linha, col: 0};
+                },
+                "true" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::True, lin: linha, col: 0};
+                },
+                "type" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Type, lin: linha, col: 0};
+                },
+                "until" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Until, lin: linha, col: 0};
+                },
+                "var" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Var, lin: linha, col: 0};
+                },
+                "while" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::While, lin: linha, col: 0};
+                },
+                "with" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::With, lin: linha, col: 0};
+                },
+                "write" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Write, lin: linha, col: 0};
+                },
 
-        for token in tabela{
-            prox_token = Token {
-                tok: ("").to_string(),
-                tipo: Tokens::Comentario,
-                lin: 0,
-                col: 0
-            };
-
-            // verifica se é reservada
-            if palavras_reservadas.contains(&(token.to_lowercase().as_str())){
-                match token.to_lowercase().as_ref() {
-                    "and" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::And, lin: linha, col: 0};
-                    },
-                    "array" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Array, lin: linha, col: 0};
-                    },
-                    "asm" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Asm, lin: linha, col: 0};
-                    },
-                    "begin" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Begin, lin: linha, col: 0};
-                    },
-                    "boolean" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Boolean, lin: linha, col: 0};
-                    },
-                    "case" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Case, lin: linha, col: 0};
-                    },
-                    "char" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Char, lin: linha, col: 0};
-                    },
-                    "const" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Const, lin: linha, col: 0};
-                    },
-                    "div" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Div, lin: linha, col: 0};
-                    },
-                    "do" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Do, lin: linha, col: 0};
-                    },
-                    "downto" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Downto, lin: linha, col: 0};
-                    },
-                    "else" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Else, lin: linha, col: 0};
-                    },
-                    "end" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::End, lin: linha, col: 0};
-                    },
-                    "false" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::False, lin: linha, col: 0};
-                    },
-                    "file" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::File, lin: linha, col: 0};
-                    },
-                    "for" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::For, lin: linha, col: 0};
-                    },
-                    "forward" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Forward, lin: linha, col: 0};
-                    },
-                    "function" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Function, lin: linha, col: 0};
-                    },
-                    "goto" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Goto, lin: linha, col: 0};
-                    },
-                    "if" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::If, lin: linha, col: 0};
-                    },
-                    "in" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::In, lin: linha, col: 0};
-                    },
-                    "inline" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Inline, lin: linha, col: 0};
-                    },
-                    "integer" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Integer, lin: linha, col: 0};
-                    },
-                    "label" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Label, lin: linha, col: 0};
-                    },
-                    "mod" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Mod, lin: linha, col: 0};
-                    },
-                    "nil" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Nil, lin: linha, col: 0};
-                    },
-                    "not" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Not, lin: linha, col: 0};
-                    },
-                    "object" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Object, lin: linha, col: 0};
-                    },
-                    "of" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Of, lin: linha, col: 0};
-                    },
-                    "or" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Or, lin: linha, col: 0};
-                    },
-                    "packed" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Packed, lin: linha, col: 0};
-                    },
-                    "procedure" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Procedure, lin: linha, col: 0};
-                    },
-                    "program" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Program, lin: linha, col: 0};
-                    },
-                    "read" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Read, lin: linha, col: 0};
-                    },
-                    "real" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Real, lin: linha, col: 0};
-                    },
-                    "record" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Record, lin: linha, col: 0};
-                    },
-                    "repeat" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Repeat, lin: linha, col: 0};
-                    },
-                    "set" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Set, lin: linha, col: 0};
-                    },
-                    "string" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Reservada_String, lin: linha, col: 0};
-                    },
-                    "then" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Then, lin: linha, col: 0};
-                    },
-                    "to" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::To, lin: linha, col: 0};
-                    },
-                    "true" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::True, lin: linha, col: 0};
-                    },
-                    "type" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Type, lin: linha, col: 0};
-                    },
-                    "until" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Until, lin: linha, col: 0};
-                    },
-                    "var" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Var, lin: linha, col: 0};
-                    },
-                    "while" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::While, lin: linha, col: 0};
-                    },
-                    "with" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::With, lin: linha, col: 0};
-                    },
-                    "write" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Write, lin: linha, col: 0};
-                    },
-
-                    _ => ()
-                }
-            } else if simbolos_pontuacao.contains(&(token.to_lowercase().as_str())){
-                match token.as_ref() {
-                    "(" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::AbreParenteses, lin: linha, col: 0};
-                    },
-                    ")" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::FechaParenteses, lin: linha, col: 0};
-                    },
-                    "[" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::AbreColchete, lin: linha, col: 0};
-                    },
-                    "]" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::FechaColchete, lin: linha, col: 0};
-                    },
-                    ":=" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Atribuicao, lin: linha, col: 0};
-                    },
-                    "." => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Ponto, lin: linha, col: 0};
-                    },
-                    "," => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Virgula, lin: linha, col: 0};
-                    },
-                    ";" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::PontoVirgula, lin: linha, col: 0};
-                    },
-                    ":" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::DoisPontos, lin: linha, col: 0};
-                    },
-                    ".." => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::DoisPontos, lin: linha, col: 0};
-                    },
-                    "\'" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Apostrofo, lin: linha, col: 0};
-                    },
-                    "\"" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Aspas, lin: linha, col: 0};
-                    },
-
-                    _ => {}
-                }
-            } else if simbolos_relacao.contains(&(token.to_lowercase().as_str())){
-                match token.as_ref() {
-                    "=" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Igual, lin: linha, col: 0};
-                    },
-                    "<>" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Diferente, lin: linha, col: 0};
-                    },
-                    "<" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Menor, lin: linha, col: 0};
-                    },
-                    ">" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Maior, lin: linha, col: 0};
-                    },
-                    "<=" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::MenorIgual, lin: linha, col: 0};
-                    },
-                    ">=" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::MaiorIgual, lin: linha, col: 0};
-                    },
-
-                    _ => ()
-                }
-                
-            } else if simbolos_aritmeticos.contains(&(token.to_lowercase().as_str())){
-                match token.as_ref() {
-                    "+" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Mais, lin: linha, col: 0};
-                    },
-                    "-" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Menor, lin: linha, col: 0};
-                    },
-                    "*" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Multiplicacao, lin: linha, col: 0};
-                    },
-                    "/" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Divisao, lin: linha, col: 0};
-                    },
-                    "%" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Modulo, lin: linha, col: 0};
-                    },
-                    "$" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::Dolar, lin: linha, col: 0};
-                    },
-                    "&" => {
-                        prox_token = Token{tok: token.to_string(), tipo: Tokens::EComercial, lin: linha, col: 0};
-                    },
-
-                    _ => ()
-                }
-
-            } else if token.to_string().parse::<i64>().is_ok() { // verifica se é número
-                prox_token = Token{tok: token.to_string(), tipo: Tokens::Numero, lin: linha, col: 0};
-            } else {
-                //classifica como Identificador
-                prox_token = Token{tok: token.to_string(), tipo: Tokens::Identificador, lin: linha, col: 0};
+                _ => ()
             }
-            aux.push(prox_token);
-        }
+        } else if SIMBOLOS_PONTUACAO.contains(&(token.to_lowercase().as_str())){
+            match token.as_ref() {
+                "(" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::AbreParenteses, lin: linha, col: 0};
+                },
+                ")" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::FechaParenteses, lin: linha, col: 0};
+                },
+                "[" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::AbreColchete, lin: linha, col: 0};
+                },
+                "]" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::FechaColchete, lin: linha, col: 0};
+                },
+                ":=" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Atribuicao, lin: linha, col: 0};
+                },
+                "." => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Ponto, lin: linha, col: 0};
+                },
+                "," => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Virgula, lin: linha, col: 0};
+                },
+                ";" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::PontoVirgula, lin: linha, col: 0};
+                },
+                ":" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::DoisPontos, lin: linha, col: 0};
+                },
+                ".." => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::DoisPontos, lin: linha, col: 0};
+                },
+                "\'" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Apostrofo, lin: linha, col: 0};
+                },
+                "\"" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Aspas, lin: linha, col: 0};
+                },
 
-        return aux;
+                _ => {}
+            }
+        } else if SIMBOLOS_RELACAO.contains(&(token.to_lowercase().as_str())){
+            match token.as_ref() {
+                "=" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Igual, lin: linha, col: 0};
+                },
+                "<>" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Diferente, lin: linha, col: 0};
+                },
+                "<" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Menor, lin: linha, col: 0};
+                },
+                ">" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Maior, lin: linha, col: 0};
+                },
+                "<=" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::MenorIgual, lin: linha, col: 0};
+                },
+                ">=" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::MaiorIgual, lin: linha, col: 0};
+                },
+
+                _ => ()
+            }
+            
+        } else if SIMBOLOS_ARITMETICOS.contains(&(token.to_lowercase().as_str())){
+            match token.as_ref() {
+                "+" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Mais, lin: linha, col: 0};
+                },
+                "-" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Menor, lin: linha, col: 0};
+                },
+                "*" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Multiplicacao, lin: linha, col: 0};
+                },
+                "/" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Divisao, lin: linha, col: 0};
+                },
+                "%" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Modulo, lin: linha, col: 0};
+                },
+                "$" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Dolar, lin: linha, col: 0};
+                },
+                "&" => {
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::EComercial, lin: linha, col: 0};
+                },
+
+                _ => ()
+            }
+
+        } else if token.to_string().parse::<i64>().is_ok() { // verifica se é número
+            prox_token = Token{tok: token.to_string(), tipo: Tokens::Numero, lin: linha, col: 0};
+        } else if token.to_lowercase() == "e"{
+            prox_token = Token{tok: token.to_string(), tipo: Tokens::FatorEscala, lin: linha, col: 0};
+        } else {
+            //classifica como Identificador
+            prox_token = Token{tok: token.to_string(), tipo: Tokens::Identificador, lin: linha, col: 0};
+        }
+        aux.push(prox_token);
     }
+
+    return aux;
 }
 
-pub fn Lexico() {
-    let mut result = TabelaSimbolos();
+pub fn lexico() {
+    let mut result = tabelaSimbolos();
+    let mut aux;
 
     println!("{:?}",result);
     println!("\n\n");
 
     for i in 0..result.len(){
-        let aux = AnalisaLexico(&mut result[i], (i+1) as i32);
+        aux = analisaLexico(&mut result[i], (i+1) as i32);
 
         tabelaToken.lock().unwrap().push(aux)
     }
 
+    tabelaToken.lock().unwrap().remove(0);
+
     println!("\n\n");
 
-    unsafe {
-        let data = tabelaToken.lock().unwrap();
-        for i in 0..data.len(){
-            println!("Linha: {0}", i);
-            for j in 0..data[i].len(){
-                println!("{:?}", data[i][j]);
-            }
-        }
+    // unsafe {
+    //     let data = tabelaToken.lock().unwrap();
+    //     for i in 0..data.len(){
+    //         println!("Linha: {0}", i);
+    //         for j in 0..data[i].len(){
+    //             println!("{:?}", data[i][j]);
+    //         }
+    //     }
+    // }
+}
+
+pub fn hasToken(linha: usize) -> bool {
+    return !tabelaToken.lock().unwrap()[linha].is_empty();
+}
+
+pub fn getToken(linha: usize) -> Token{
+    return tabelaToken.lock().unwrap()[linha][0].clone();
+}
+
+pub fn eraseToken(linha: usize){
+    tabelaToken.lock().unwrap()[linha].remove(0);
+}
+
+pub fn lookahead_nextline(linha: usize) -> Token {
+    if size(linha) > 1 {
+        return tabelaToken.lock().unwrap()[linha][0].clone();
+    } else {
+        return Token {
+            tok: ("").to_string(),
+            tipo: Tokens::Comentario,
+            lin: 0,
+            col: 0
+        };   
     }
+}
+
+pub fn lookahead(linha: usize) -> Token {
+    if size(linha) > 1 {
+        return tabelaToken.lock().unwrap()[linha][1].clone();
+    } else {
+        return Token {
+            tok: ("").to_string(),
+            tipo: Tokens::Comentario,
+            lin: 0,
+            col: 0
+        };   
+    }
+}
+
+pub fn size(linha: usize) -> usize {
+    return tabelaToken.lock().unwrap()[linha].len();
 }

@@ -1,4 +1,14 @@
 program exampleControlFlow;
+const
+    Name = 'Tao Yue';
+    FirstLetter = 'a';
+    Year = 1997;
+    pi = 3.1415926535897932;
+var
+    IdentifierList1 : Integer;
+    IdentifierList2 : Char;
+    IdentifierList3 : Boolean;
+    IdentifierList4 : Real;
 begin
     // comentário
     if 20 = 5 then
