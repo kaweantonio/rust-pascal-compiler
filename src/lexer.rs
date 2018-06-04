@@ -220,7 +220,7 @@ fn tabelaSimbolos<'a>() -> Vec<Vec<String>> {
     let mut i = 0;
     let mut j = 0;
 
-    for (indice, caractere) in contents.match_indices(|c: char| !(c.is_alphanumeric())) {
+    for (indice, caractere) in contents.match_indices(|c: char| !(c.is_alphanumeric() || !(c != '_'))) {
         if i != indice{
             aux[j].push((&contents[i..indice]).to_string());
         }
