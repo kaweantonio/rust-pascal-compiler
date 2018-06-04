@@ -20,12 +20,12 @@ static mut linha: usize = 0;
 
 fn erro_msg(msg: String){
     println!("{}", msg);
-    exit(1); 
+    exit(1);
 }
 
 fn erro(token_lido: lexer::Token, token_esperado: Tokens){
     println!("ERRO na linha {0}: Esperado token {1}, mas encontrou {2}", token_lido.lin, token_esperado, token_lido.tipo);
-    exit(1); 
+    exit(1);
 }
 
 fn prox_token() -> lexer::Token {
@@ -42,7 +42,7 @@ fn consome(token_atual: lexer::Token, token_esperado: Tokens){
         erro(token_atual, token_esperado);
     }
     else {
-        unsafe { 
+        unsafe {
             lexer::eraseToken(linha);
         }
     }
@@ -132,9 +132,9 @@ fn bloco(){
         simbolo = prox_token();
     }
 
-    // if simbolo.tipo == Tokens::Procedure{
-    //     rotinas();
-    // }
+    if simbolo.tipo == Tokens::Procedure{
+         rotinas();
+    }
 
     consome(simbolo, Tokens::Begin);
 }
@@ -181,7 +181,7 @@ fn constantes(){
     consome(simbolo, Tokens::Const);
     const_definicao();
     simbolo = prox_token();
-    
+
     unsafe {
         while simbolo.tipo == Tokens::PontoVirgula && lexer::lookahead_nextline(linha+1).tipo == Tokens::Identificador {
             consome(simbolo, Tokens::PontoVirgula);
@@ -246,7 +246,7 @@ fn ehString() -> bool {
 
 fn string(){
     // sinaliza se string abriu com aspas [true] ou apóstrofo [false]
-    let mut tipo = false; 
+    let mut tipo = false;
     let mut simbolo = prox_token();
     if simbolo.tipo == Tokens::Apostrofo {
         consome(simbolo, Tokens::Apostrofo);
@@ -436,7 +436,7 @@ fn var_declaracao(){
 
     consome(simbolo, Tokens::DoisPontos);
     simbolo = prox_token();
-    
+
     match simbolo.tipo {
         Tokens::Integer => consome(simbolo, Tokens::Integer),
         Tokens::Real => consome(simbolo, Tokens::Real),
@@ -447,4 +447,61 @@ fn var_declaracao(){
             erro_msg(string);
         },
     }
+}
+
+// procedure_declaration ::= procedure identifier [ formal_parameters ] ; block
+fn procedimento_declaracao(token_atual: lexer::Token){
+    consome(token_atual, Tokens::Procedure);
+    let mut simbolo;
+    simbolo = prox_token();
+    consome(simbolo, Tokens::AbreColchete);
+
+    //parametros_formais();
+
+    simbolo = prox_token();
+    consome(simbolo, Tokens::FechaColchete);
+    simbolo = prox_token();
+    consome(simbolo, Tokens::PontoVirgula);
+
+    bloco();
+}
+
+// function_declaration ::= function identifier [ formal_parameters ] : identifier ; block
+fn funcao_declaracao(token_atual: lexer::Token){
+    consome(token_atual, Tokens::Function);
+    let mut simbolo;
+    simbolo = prox_token();
+    consome(simbolo, Tokens::AbreColchete);
+
+    //parametros_formais();
+
+    simbolo = prox_token();
+    consome(simbolo, Tokens::FechaColchete);
+    simbolo = prox_token();
+    consome(simbolo, Tokens::DoisPontos);
+
+    identificador();
+
+    simbolo = prox_token();
+    consome(simbolo, Tokens::PontoVirgula);
+
+    bloco();
+}
+
+// subroutine_declaration_part ::= { procedure_declaration ; | function_declaration ; }
+fn rotinas(){
+    let mut simbolo;
+    simbolo = prox_token();
+
+    match simbolo.tipo {
+        Tokens::Procedure => procedimento_declaracao(),
+        Tokens::Function => funcao_declaracao(),
+        _ => {
+            let string = ["Erro: Esperado a declaracao de Procedure ou Function mas foi encontrado", simbolo.tok.as_ref()].join("\n");
+            erro_msg(string);
+        },
+    }
+
+    simbolo = prox_token();
+    consome(simbolo, Tokens::PontoVirgula);
 }
