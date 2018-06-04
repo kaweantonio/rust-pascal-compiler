@@ -4,6 +4,15 @@ const
     FirstLetter = 'a';
     Year = 1997;
     pi = 3.1415926535897932;
+type
+    simple_integer_array = array [1..10] of Integer;
+    more_complex_array = array [0..5,1..3] of Integer;
+    record_foo = record 
+                    Bar: Integer;
+                end;
+    empty_record = record end;
+    range = 1..10;
+        
 var
     IdentifierList1 : Integer;
     IdentifierList2 : Char;

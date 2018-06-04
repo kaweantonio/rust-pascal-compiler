@@ -122,10 +122,10 @@ fn bloco(){
         simbolo = prox_token();
     }
 
-    // if simbolo.tipo == Tokens::Type{
-    //     tipo();
-    //     simbolo = prox_token();
-    // }
+    if simbolo.tipo == Tokens::Type{
+        tipo_declaracao();
+        simbolo = prox_token();
+    }
 
     if simbolo.tipo == Tokens::Var{
         variaveis();
@@ -165,11 +165,13 @@ fn numeros() {
     consome(simbolo, Tokens::Numero);
 
     simbolo = prox_token();
-    if (simbolo.tipo == Tokens::Ponto){
-        consome(simbolo, Tokens::Ponto);
-        simbolo = prox_token();
-        consome(simbolo, Tokens::Numero);
-        simbolo = prox_token();
+    unsafe {
+        if simbolo.tipo == Tokens::Ponto && lexer::lookahead(linha).tipo == Tokens::Numero {
+            consome(simbolo, Tokens::Ponto);
+            simbolo = prox_token();
+            consome(simbolo, Tokens::Numero);
+            simbolo = prox_token();
+        }
     }
 }
 
@@ -262,6 +264,148 @@ fn string(){
         consome(simbolo, Tokens::Apostrofo);
     } else {
         consome(simbolo, Tokens::Aspas);
+    }
+}
+
+// type_declaration_part ::= type type_definition { ; type_definition } ;
+fn tipo_declaracao(){
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Type);
+    tipo_definicao();
+    'type_declaration_part_loop: loop {
+        simbolo = prox_token();
+        consome(simbolo, Tokens::PontoVirgula);
+        simbolo = prox_token();
+        if simbolo.tipo != Tokens::Identificador {
+            break 'type_declaration_part_loop;
+        }
+        tipo_definicao();
+    }
+}
+
+// type_definition ::= identifier = type
+fn tipo_definicao() {
+    let mut simbolo;
+    identificador();
+    simbolo = prox_token();
+    consome(simbolo, Tokens::Igual);
+    tipo();
+}
+
+/*
+type ::= ^ identifier
+| array [ simple_type { , simple_type } ] of type
+| set of simple_type
+| record field_list end
+| simple_type
+*/
+fn tipo() {
+    let simbolo = prox_token();
+
+    match simbolo.tipo {
+        Tokens::Boolean => consome(simbolo, Tokens::Boolean),
+        Tokens::Char => consome(simbolo, Tokens::Char),
+        Tokens::Integer => consome(simbolo, Tokens::Integer),
+        Tokens::Real => consome(simbolo, Tokens::Real),
+        Tokens::Identificador => identificador(),
+        Tokens::Array => array(),
+        Tokens::Set => set_of(),
+        Tokens::Record => record(),
+        _ => simple_type(),
+    }
+}
+
+// array [ simple_type { , simple_type } ] of type
+fn array() {
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Array);
+    simbolo = prox_token();
+    consome(simbolo, Tokens::AbreColchete);
+    simple_type();
+    simbolo = prox_token();
+    while simbolo.tipo == Tokens::Virgula {
+        consome(simbolo, Tokens::Virgula);
+        simple_type();
+        simbolo = prox_token();
+    }
+    simbolo = prox_token();
+    consome(simbolo, Tokens::FechaColchete);
+    simbolo = prox_token();
+    consome(simbolo, Tokens::Of);
+    tipo();
+}
+
+// set of simple_type
+fn set_of() {
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Set);
+    simbolo = prox_token();
+    consome(simbolo, Tokens::Of);
+    simple_type();
+}
+
+// record field_list end
+fn record() {
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Record);
+    field_list();
+    simbolo = prox_token();
+    consome(simbolo, Tokens::End);
+}
+
+/*
+simple_type ::= identifier
+| ( identifier { , identifier } )
+| const .. const
+*/
+fn simple_type(){
+    let mut simbolo = prox_token();
+    match simbolo.tipo {
+        Tokens::Identificador => identificador(),
+        Tokens::AbreParenteses => {
+            consome(simbolo, Tokens::AbreParenteses);
+            simbolo = prox_token();
+            while simbolo.tipo == Tokens::Virgula {
+                consome(simbolo, Tokens::Virgula);
+                identificador();
+                simbolo = prox_token();
+            }
+            consome(simbolo, Tokens::FechaParenteses);
+        },
+        _ => {
+            const_();
+            simbolo = prox_token();
+            consome(simbolo, Tokens::Ponto);
+            simbolo = prox_token();
+            consome(simbolo, Tokens::Ponto);
+            const_();
+        }
+    }
+}
+
+// field_list ::= [ identifier_list : type] { ; [identifier_list : type] }
+fn field_list() {
+    let mut simbolo = prox_token();
+
+    match simbolo.tipo {
+        Tokens::Identificador => {
+            'field_list_loop: loop {
+                if (simbolo.tipo == Tokens::End) {
+                    break 'field_list_loop;
+                }
+                lista_de_identificadores();
+                simbolo = prox_token();
+                consome(simbolo, Tokens::DoisPontos);
+                tipo();
+                simbolo = prox_token();
+                if simbolo.tipo != Tokens::PontoVirgula {
+                    break 'field_list_loop;
+                }
+                consome(simbolo, Tokens::PontoVirgula);
+                simbolo = prox_token();
+            }
+        },
+        _ => {},
     }
 }
 
