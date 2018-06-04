@@ -70,7 +70,6 @@ pub enum Tokens {
     Virgula, // ,
     PontoVirgula, // ;
     DoisPontos, // :
-    PontoPonto, // ..
     Apostrofo, // '
     Aspas, // "
 
@@ -159,7 +158,6 @@ impl fmt::Display for Tokens {
             Tokens::Virgula => ",",
             Tokens::PontoVirgula => ";",
             Tokens::DoisPontos => ":",
-            Tokens::PontoPonto => "..",
             Tokens::Apostrofo => "\'",
             Tokens::Aspas => "\"",
             Tokens::Igual => "=",
