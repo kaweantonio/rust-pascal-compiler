@@ -10,7 +10,7 @@ use std::process::exit;
 //     IDEN, // Identificador
 //     COIDEN, // Identificador de constantes
 //     FIIDEN, // Identificador de fields
-//     VAIDEN, // Identificador de variaveis
+//     VAIDEN, // Identificador de variáveis
 //     FUIDEN, // Identificador de funções
 //     TYIDEN, // Identificador de tipos
 //     PRIDEN, // Identificador de procedimentos
@@ -60,46 +60,21 @@ pub fn ASD(){
     //     }
     // }
 
-    programa();
+    program();
 }
 
 // program ::= program identifier [ ( identifier_list ) ] ; block .
-fn programa(){
+fn program(){
     let mut simbolo = prox_token();
     consome(simbolo, Tokens::Program);
-    identificador();
+    identifier();
     simbolo = prox_token();
 
     consome(simbolo, Tokens::PontoVirgula);
-    bloco();
+    block();
 
     // simbolo = prox_token();
     // consome(simbolo, Tokens::Ponto);
-}
-
-// identifier_list ::= identifier { , identifier }
-fn lista_de_identificadores(){
-    let mut simbolo;
-
-    identificador();
-    simbolo = prox_token();
-    while simbolo.tipo == Tokens::Virgula {
-        consome(simbolo, Tokens::Virgula);
-        identificador();
-        simbolo = prox_token();
-    }
-}
-
-fn identificador(){
-    let simbolo = prox_token();
-    consome(simbolo, Tokens::Identificador);
-}
-
-fn ehSequenciaDigitos() -> bool {
-    unsafe {
-        let aux = lexer::lookahead(linha);
-        return aux.tipo != Tokens::Ponto && aux.tipo != Tokens::FatorEscala;
-    }
 }
 
 /*
@@ -110,82 +85,55 @@ block ::= { [label_declaration_part]
             [subroutine_declaration_part] }
             compound_statement
 */
-fn bloco(){
+fn block(){
     let mut simbolo = prox_token();
     if simbolo.tipo == Tokens::Label {
-        rotulos();
+        label_declaration_part();
         simbolo = prox_token();
     }
 
     if simbolo.tipo == Tokens::Const{
-        constantes();
+        const_declaration_part();
         simbolo = prox_token();
     }
 
     if simbolo.tipo == Tokens::Type{
-        tipo_declaracao();
+        type_declaration_part();
         simbolo = prox_token();
     }
 
     if simbolo.tipo == Tokens::Var{
-        variaveis();
+        var_declaration_part();
         simbolo = prox_token();
     }
 
     if simbolo.tipo == Tokens::Procedure{
-         rotinas();
+         subroutine_declaration_part();
     }
 
     consome(simbolo, Tokens::Begin);
 }
 
 // label_declaration_part ::= label number { , number } ;
-fn rotulos(){
+fn label_declaration_part(){
     let mut simbolo = prox_token();
     consome(simbolo, Tokens::Label);
-    lista_de_numeros();
+    number_list();
     simbolo = prox_token();
     consome(simbolo, Tokens::PontoVirgula);
 }
 
-fn lista_de_numeros(){
-    numeros();
-
-    let mut simbolo = prox_token();
-
-    while simbolo.tipo == Tokens::Virgula {
-        consome(simbolo, Tokens::Virgula);
-        numeros();
-        simbolo = prox_token();
-    }
-}
-
-fn numeros() {
-    let mut simbolo = prox_token();
-    consome(simbolo, Tokens::Numero);
-
-    simbolo = prox_token();
-    unsafe {
-        if simbolo.tipo == Tokens::Ponto && lexer::lookahead(linha).tipo == Tokens::Numero {
-            consome(simbolo, Tokens::Ponto);
-            simbolo = prox_token();
-            consome(simbolo, Tokens::Numero);
-            simbolo = prox_token();
-        }
-    }
-}
-
 // const_declaration_part ::= const const_definition { ; const_definition } ;
-fn constantes(){
+fn const_declaration_part(){
     let mut simbolo = prox_token();
     consome(simbolo, Tokens::Const);
-    const_definicao();
+    const_definition();
     simbolo = prox_token();
 
     unsafe {
         while simbolo.tipo == Tokens::PontoVirgula && lexer::lookahead_nextline(linha+1).tipo == Tokens::Identificador {
             consome(simbolo, Tokens::PontoVirgula);
-            const_definicao();
+            const_definition();
             simbolo = prox_token();
         }
     }
@@ -194,84 +142,18 @@ fn constantes(){
 }
 
 // const_definition ::= identifier = const
-fn const_definicao(){
-    identificador();
+fn const_definition(){
+    identifier();
     let mut simbolo = prox_token();
     consome(simbolo, Tokens::Igual);
     const_();
 }
 
-/*const ::= string
-    | [+ | -] identifier
-    | [+ | -] number
-*/
-fn const_() {
-    let mut simbolo;
-    // verifica se é string
-    if (ehString()){
-        string();
-    } else {
-        if (temSinal()){
-            sinal();
-        }
-        simbolo = prox_token();
-        if (simbolo.tipo == Tokens::Identificador){
-            while (simbolo.tipo == Tokens::Identificador){
-                identificador();
-            }
-        } else {
-            numeros();
-        }
-    }
-}
-
-fn temSinal() -> bool {
-    let simbolo = prox_token();
-    return simbolo.tipo == Tokens::Mais || simbolo.tipo == Tokens::Menos;
-}
-
-fn sinal(){
-    let simbolo = prox_token();
-    if simbolo.tipo == Tokens::Mais {
-        consome(simbolo, Tokens::Mais)
-    } else {
-        consome(simbolo, Tokens::Menos);
-    }
-}
-
-fn ehString() -> bool {
-    let simbolo = prox_token();
-    return simbolo.tipo == Tokens::Apostrofo || simbolo.tipo == Tokens::Aspas;
-}
-
-fn string(){
-    // sinaliza se string abriu com aspas [true] ou apóstrofo [false]
-    let mut tipo = false;
-    let mut simbolo = prox_token();
-    if simbolo.tipo == Tokens::Apostrofo {
-        consome(simbolo, Tokens::Apostrofo);
-    } else {
-        tipo = true;
-        consome(simbolo, Tokens::Aspas);
-    }
-
-    simbolo = prox_token();
-    while (simbolo.tipo == Tokens::Identificador){
-        identificador();
-        simbolo = prox_token();
-    }
-    if(!tipo){
-        consome(simbolo, Tokens::Apostrofo);
-    } else {
-        consome(simbolo, Tokens::Aspas);
-    }
-}
-
 // type_declaration_part ::= type type_definition { ; type_definition } ;
-fn tipo_declaracao(){
+fn type_declaration_part(){
     let mut simbolo = prox_token();
     consome(simbolo, Tokens::Type);
-    tipo_definicao();
+    type_definition();
     'type_declaration_part_loop: loop {
         simbolo = prox_token();
         consome(simbolo, Tokens::PontoVirgula);
@@ -279,17 +161,17 @@ fn tipo_declaracao(){
         if simbolo.tipo != Tokens::Identificador {
             break 'type_declaration_part_loop;
         }
-        tipo_definicao();
+        type_definition();
     }
 }
 
 // type_definition ::= identifier = type
-fn tipo_definicao() {
+fn type_definition() {
     let mut simbolo;
-    identificador();
+    identifier();
     simbolo = prox_token();
     consome(simbolo, Tokens::Igual);
-    tipo();
+    type_();
 }
 
 /*
@@ -299,7 +181,7 @@ type ::= ^ identifier
 | record field_list end
 | simple_type
 */
-fn tipo() {
+fn type_() {
     let simbolo = prox_token();
 
     match simbolo.tipo {
@@ -307,7 +189,7 @@ fn tipo() {
         Tokens::Char => consome(simbolo, Tokens::Char),
         Tokens::Integer => consome(simbolo, Tokens::Integer),
         Tokens::Real => consome(simbolo, Tokens::Real),
-        Tokens::Identificador => identificador(),
+        Tokens::Identificador => identifier(),
         Tokens::Array => array(),
         Tokens::Set => set_of(),
         Tokens::Record => record(),
@@ -332,7 +214,7 @@ fn array() {
     consome(simbolo, Tokens::FechaColchete);
     simbolo = prox_token();
     consome(simbolo, Tokens::Of);
-    tipo();
+    type_();
 }
 
 // set of simple_type
@@ -361,13 +243,13 @@ simple_type ::= identifier
 fn simple_type(){
     let mut simbolo = prox_token();
     match simbolo.tipo {
-        Tokens::Identificador => identificador(),
+        Tokens::Identificador => identifier(),
         Tokens::AbreParenteses => {
             consome(simbolo, Tokens::AbreParenteses);
             simbolo = prox_token();
             while simbolo.tipo == Tokens::Virgula {
                 consome(simbolo, Tokens::Virgula);
-                identificador();
+                identifier();
                 simbolo = prox_token();
             }
             consome(simbolo, Tokens::FechaParenteses);
@@ -383,6 +265,106 @@ fn simple_type(){
     }
 }
 
+/*const ::= string
+    | [+ | -] identifier
+    | [+ | -] number
+*/
+fn const_() {
+    let mut simbolo;
+    // verifica se é string
+    if (ehString()){
+        string();
+    } else {
+        if (temSinal()){
+            sinal();
+        }
+        simbolo = prox_token();
+        if (simbolo.tipo == Tokens::Identificador){
+            while (simbolo.tipo == Tokens::Identificador){
+                identifier();
+            }
+        } else {
+            number();
+        }
+    }
+}
+
+fn ehString() -> bool {
+    let simbolo = prox_token();
+    return simbolo.tipo == Tokens::Apostrofo || simbolo.tipo == Tokens::Aspas;
+}
+
+fn string(){
+    // sinaliza se string abriu com aspas [true] ou apóstrofo [false]
+    let mut tipo = false;
+    let mut simbolo = prox_token();
+    if simbolo.tipo == Tokens::Apostrofo {
+        consome(simbolo, Tokens::Apostrofo);
+    } else {
+        tipo = true;
+        consome(simbolo, Tokens::Aspas);
+    }
+
+    simbolo = prox_token();
+    while (simbolo.tipo == Tokens::Identificador){
+        identifier();
+        simbolo = prox_token();
+    }
+    if(!tipo){
+        consome(simbolo, Tokens::Apostrofo);
+    } else {
+        consome(simbolo, Tokens::Aspas);
+    }
+}
+
+fn ehSequenciaDigitos() -> bool {
+    unsafe {
+        let aux = lexer::lookahead(linha);
+        return aux.tipo != Tokens::Ponto && aux.tipo != Tokens::FatorEscala;
+    }
+}
+
+fn number_list(){
+    number();
+
+    let mut simbolo = prox_token();
+
+    while simbolo.tipo == Tokens::Virgula {
+        consome(simbolo, Tokens::Virgula);
+        number();
+        simbolo = prox_token();
+    }
+}
+
+fn number() {
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Numero);
+
+    simbolo = prox_token();
+    unsafe {
+        if simbolo.tipo == Tokens::Ponto && lexer::lookahead(linha).tipo == Tokens::Numero {
+            consome(simbolo, Tokens::Ponto);
+            simbolo = prox_token();
+            consome(simbolo, Tokens::Numero);
+            simbolo = prox_token();
+        }
+    }
+}
+
+fn temSinal() -> bool {
+    let simbolo = prox_token();
+    return simbolo.tipo == Tokens::Mais || simbolo.tipo == Tokens::Menos;
+}
+
+fn sinal(){
+    let simbolo = prox_token();
+    if simbolo.tipo == Tokens::Mais {
+        consome(simbolo, Tokens::Mais)
+    } else {
+        consome(simbolo, Tokens::Menos);
+    }
+}
+
 // field_list ::= [ identifier_list : type] { ; [identifier_list : type] }
 fn field_list() {
     let mut simbolo = prox_token();
@@ -393,10 +375,10 @@ fn field_list() {
                 if (simbolo.tipo == Tokens::End) {
                     break 'field_list_loop;
                 }
-                lista_de_identificadores();
+                identifier_list();
                 simbolo = prox_token();
                 consome(simbolo, Tokens::DoisPontos);
-                tipo();
+                type_();
                 simbolo = prox_token();
                 if simbolo.tipo != Tokens::PontoVirgula {
                     break 'field_list_loop;
@@ -410,16 +392,16 @@ fn field_list() {
 }
 
 // var_declaration_part ::= var var_declaration { ; var_declaration} ;
-fn variaveis(){
+fn var_declaration_part(){
     let mut simbolo = prox_token();
     consome(simbolo, Tokens::Var);
-    var_declaracao();
+    var_declaration();
 
     simbolo = prox_token();
     unsafe {
         while simbolo.tipo == Tokens::PontoVirgula && lexer::lookahead_nextline(linha+1).tipo == Tokens::Identificador{
             consome(simbolo, Tokens::PontoVirgula);
-            var_declaracao();
+            var_declaration();
             simbolo = prox_token();
         }
     }
@@ -428,9 +410,9 @@ fn variaveis(){
 }
 
 // var_declaration ::= identifier_list : type
-fn var_declaracao(){
+fn var_declaration(){
     let mut simbolo;
-    lista_de_identificadores();
+    identifier_list();
 
     simbolo = prox_token();
 
@@ -449,10 +431,47 @@ fn var_declaracao(){
     }
 }
 
-// procedure_declaration ::= procedure identifier [ formal_parameters ] ; block
-fn procedimento_declaracao(token_atual: lexer::Token){
-    consome(token_atual, Tokens::Procedure);
+// identifier_list ::= identifier { , identifier }
+fn identifier_list(){
     let mut simbolo;
+
+    identifier();
+    simbolo = prox_token();
+    while simbolo.tipo == Tokens::Virgula {
+        consome(simbolo, Tokens::Virgula);
+        identifier();
+        simbolo = prox_token();
+    }
+}
+
+fn identifier(){
+    let simbolo = prox_token();
+    consome(simbolo, Tokens::Identificador);
+}
+
+// subroutine_declaration_part ::= { procedure_declaration ; | function_declaration ; }
+fn subroutine_declaration_part(){
+    let mut simbolo;
+    simbolo = prox_token();
+
+    match simbolo.tipo {
+        Tokens::Procedure => procedure_declaration(),
+        Tokens::Function => function_declaration(),
+        _ => {
+            let string = ["Erro: Esperado a declaracao de Procedure ou Function mas foi encontrado {:?}.", simbolo.tok.as_ref()].join("\n");
+            erro_msg(string);
+        },
+    }
+
+    simbolo = prox_token();
+    consome(simbolo, Tokens::PontoVirgula);
+}
+
+// procedure_declaration ::= procedure identifier [ formal_parameters ] ; block
+fn procedure_declaration(){
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Procedure);
+    
     simbolo = prox_token();
     consome(simbolo, Tokens::AbreColchete);
 
@@ -462,14 +481,12 @@ fn procedimento_declaracao(token_atual: lexer::Token){
     consome(simbolo, Tokens::FechaColchete);
     simbolo = prox_token();
     consome(simbolo, Tokens::PontoVirgula);
-
-    bloco();
 }
 
 // function_declaration ::= function identifier [ formal_parameters ] : identifier ; block
-fn funcao_declaracao(token_atual: lexer::Token){
-    consome(token_atual, Tokens::Function);
-    let mut simbolo;
+fn function_declaration(){
+    let mut simbolo = prox_token();
+    consome(simbolo, Tokens::Function);
     simbolo = prox_token();
     consome(simbolo, Tokens::AbreColchete);
 
@@ -480,27 +497,7 @@ fn funcao_declaracao(token_atual: lexer::Token){
     simbolo = prox_token();
     consome(simbolo, Tokens::DoisPontos);
 
-    identificador();
-
-    simbolo = prox_token();
-    consome(simbolo, Tokens::PontoVirgula);
-
-    bloco();
-}
-
-// subroutine_declaration_part ::= { procedure_declaration ; | function_declaration ; }
-fn rotinas(){
-    let mut simbolo;
-    simbolo = prox_token();
-
-    match simbolo.tipo {
-        Tokens::Procedure => procedimento_declaracao(),
-        Tokens::Function => funcao_declaracao(),
-        _ => {
-            let string = ["Erro: Esperado a declaracao de Procedure ou Function mas foi encontrado", simbolo.tok.as_ref()].join("\n");
-            erro_msg(string);
-        },
-    }
+    identifier();
 
     simbolo = prox_token();
     consome(simbolo, Tokens::PontoVirgula);
