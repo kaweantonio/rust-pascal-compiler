@@ -481,6 +481,8 @@ fn procedure_declaration(){
     consome(simbolo, Tokens::FechaColchete);
     simbolo = prox_token();
     consome(simbolo, Tokens::PontoVirgula);
+
+    block();
 }
 
 // function_declaration ::= function identifier [ formal_parameters ] : identifier ; block
@@ -501,4 +503,6 @@ fn function_declaration(){
 
     simbolo = prox_token();
     consome(simbolo, Tokens::PontoVirgula);
+
+    block();
 }
