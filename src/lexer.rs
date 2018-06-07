@@ -201,8 +201,8 @@ impl Token {
 
 static PALAVRAS_RESERVADAS: &'static [&'static str] = &["and", "array", "asm", "begin", "boolean", "case", "char", "const", "div", "do", "downto", "else", "end", "false", "file", "for", "forward", "function", "goto", "if", "in", "inline", "integer", "label","mod", "nil", "not", "object", "of", "or", "packed", "procedure", "program", "read", "real", "record", "repeat", "set", "string", "then", "to", "true", "type", "until", "var", "while", "with", "write"];
 
-static SIMBOLOS_PONTUACAO: &'static [&'static str] = &["(", ")", "[", "]", ":=", ".", ",", ";", ":", "..", "\'", "\""];
-static SIMBOLOS_RELACAO: &'static [&'static str] = &["=", "<>", "<", ">", "<=", ">="];
+static SIMBOLOS_PONTUACAO: &'static [&'static str] = &["(", ")", "[", "]", ".", ",", ";", ":", "\'", "\""];
+static SIMBOLOS_RELACAO: &'static [&'static str] = &["=", "<", ">"];
 
 static SIMBOLOS_ARITMETICOS: &'static [&'static str] = &["+", "-", "*", "/", "%", "$", "&"];
 
@@ -422,9 +422,6 @@ fn analisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                 "]" => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::FechaColchete, lin: linha, col: 0};
                 },
-                ":=" => {
-                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Atribuicao, lin: linha, col: 0};
-                },
                 "." => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Ponto, lin: linha, col: 0};
                 },
@@ -454,22 +451,12 @@ fn analisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                 "=" => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Igual, lin: linha, col: 0};
                 },
-                "<>" => {
-                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Diferente, lin: linha, col: 0};
-                },
                 "<" => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Menor, lin: linha, col: 0};
                 },
                 ">" => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Maior, lin: linha, col: 0};
                 },
-                "<=" => {
-                    prox_token = Token{tok: token.to_string(), tipo: Tokens::MenorIgual, lin: linha, col: 0};
-                },
-                ">=" => {
-                    prox_token = Token{tok: token.to_string(), tipo: Tokens::MaiorIgual, lin: linha, col: 0};
-                },
-
                 _ => ()
             }
             
@@ -514,32 +501,84 @@ fn analisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
     return aux;
 }
 
+fn tratamento(mut vec_tok: Vec<Token>) -> Vec<Token>{
+    let mut tamanho = vec_tok.len()-1;
+
+    for i in 0..tamanho{
+        println!("{}", i);
+        if vec_tok[i].tipo == Tokens::DoisPontos && vec_tok[i+1].tipo == Tokens::Igual{
+            vec_tok[i].tipo = Tokens::Atribuicao;
+            vec_tok[i].tok = ":=".to_string();
+            vec_tok.remove(i+1);
+            tamanho = tamanho-1;
+        } else if vec_tok[i].tipo == Tokens::Menor && vec_tok[i+1].tipo == Tokens::Maior {
+            vec_tok[i].tipo = Tokens::Diferente;
+            vec_tok[i].tok = "<>".to_string();
+            vec_tok.remove(i+1);
+            tamanho = tamanho-1;
+        } else if vec_tok[i].tipo == Tokens::Menor && vec_tok[i+1].tipo == Tokens::Igual {
+            vec_tok[i].tipo = Tokens::MenorIgual;
+            vec_tok[i].tok = "<=".to_string();
+            vec_tok.remove(i+1);
+            tamanho = tamanho-1;
+        } else if vec_tok[i].tipo == Tokens::Maior && vec_tok[i+1].tipo == Tokens::Igual {
+            vec_tok[i].tipo = Tokens::MaiorIgual;
+            vec_tok[i].tok = ">=".to_string();
+            vec_tok.remove(i+1);
+            tamanho = tamanho-1;
+        } else if vec_tok[i].tipo == Tokens::Divisao && vec_tok[i+1].tipo == Tokens::Divisao {
+            vec_tok.split_off(i);
+            return vec_tok;
+        }
+    }
+
+    let mut i = 0;
+    while i < tamanho {
+        if vec_tok[i].tipo == Tokens::Aspas || vec_tok[i].tipo == Tokens::Apostrofo {
+            let mut j = i + 1;
+            while vec_tok[j].tipo != Tokens::Aspas && vec_tok[j].tipo != Tokens::Apostrofo {
+                vec_tok[j].tipo = Tokens::Identificador;
+                j = j + 1;
+            }
+            i = j;
+        }
+        i = i + 1;
+    }
+
+    return vec_tok;
+}
+
 pub fn lexico() {
     let mut result = tabelaSimbolos();
     let mut aux;
+    let mut aux2;
 
     println!("{:?}",result);
     println!("\n\n");
 
     for i in 0..result.len(){
         aux = analisaLexico(&mut result[i], (i+1) as i32);
+        
+        aux2 = tratamento(aux);
 
-        tabelaToken.lock().unwrap().push(aux)
+        if aux2.len() > 0 {
+            tabelaToken.lock().unwrap().push(aux2);
+        }
     }
 
     tabelaToken.lock().unwrap().remove(0);
 
     println!("\n\n");
 
-    // unsafe {
-    //     let data = tabelaToken.lock().unwrap();
-    //     for i in 0..data.len(){
-    //         println!("Linha: {0}", i);
-    //         for j in 0..data[i].len(){
-    //             println!("{:?}", data[i][j]);
-    //         }
-    //     }
-    // }
+    unsafe {
+        let data = tabelaToken.lock().unwrap();
+        for i in 0..data.len(){
+            println!("Linha: {0}", i+1);
+            for j in 0..data[i].len(){
+                println!("{:?}", data[i][j]);
+            }
+        }
+    }
 }
 
 pub fn hasToken(linha: usize) -> bool {
