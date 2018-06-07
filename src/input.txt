@@ -52,7 +52,7 @@ begin
         begin
             writeln('this will not print');
         end
-    $FF;
-    %11111111;
-    &17;
+    // $FF;
+    // %11111111;
+    // &17;
 end.
