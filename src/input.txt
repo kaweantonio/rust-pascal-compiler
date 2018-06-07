@@ -12,12 +12,24 @@ type
                 end;
     empty_record = record end;
     range = 1..10;
-        
 var
     IdentifierList1 : Integer;
     IdentifierList2 : Char;
     IdentifierList3 : Boolean;
     IdentifierList4 : Real;
+procedure Hello;
+begin
+  ShowMessage ('Hello world!');
+end;
+function Double (Value: Integer) : Integer;
+begin
+  Double := Value * 2;
+end;
+
+function Double2 (Value: Integer) : Integer;
+begin
+  Result := Value * 2;
+end;
 begin
     // comentário
     if 20 = 5 then
