@@ -22,6 +22,7 @@ lazy_static! {
 }
 
 static mut linha: usize = 0;
+static mut pos_atual: i32 = 0; // eh o contador das variaveis existentes
 
 fn erro_msg(msg: String){
     println!("{}", msg);
@@ -426,10 +427,10 @@ fn var_declaration_part(){
     consome(simbolo, Tokens::PontoVirgula);
 }
 
-// var_declaration ::= identifier_list : type
+// var_declaration ::= identifier_list_var : type
 fn var_declaration(){
     let mut simbolo;
-    identifier_list();
+    identifier_list_var();
 
     simbolo = prox_token();
 
@@ -445,6 +446,37 @@ fn var_declaration(){
             let string = ["Erro: Esperado algum tipo de variável básico [Integer, Real, Char, ou Boolean] mas foi encontrado", simbolo.tok.as_ref()].join("\n");
             erro_msg(string);
         },
+    }
+
+}
+
+// identifier_list_var ::= identifier { , identifier }
+fn identifier_list_var(){
+    let (mut simbolo, mut aux);
+    aux = prox_token();
+    identifier();
+    unsafe {
+        let mut var_atual = Variavel {
+            tok: aux.tok,
+            posicao: pos_atual,
+        };
+        tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
+        pos_atual = pos_atual + 1;
+    }
+    simbolo = prox_token();
+    while simbolo.tipo == Tokens::Virgula {
+        consome(simbolo, Tokens::Virgula);
+        aux = prox_token();
+        identifier();
+        unsafe {
+            let mut var_atual = Variavel {
+                tok: aux.tok,
+                posicao: pos_atual,
+            };
+            tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
+            pos_atual = pos_atual + 1;
+        }
+        simbolo = prox_token();
     }
 }
 
