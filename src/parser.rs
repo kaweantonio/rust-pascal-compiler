@@ -3,19 +3,6 @@ use lexer::Tokens;
 
 use std::process::exit;
 
-// #[derive(Debug, Clone)]
-// pub enum Terminais {
-//     NUMB, // Numeros
-//     STRING, // Cadeia de caracteres
-//     IDEN, // Identificador
-//     COIDEN, // Identificador de constantes
-//     FIIDEN, // Identificador de fields
-//     VAIDEN, // Identificador de variáveis
-//     FUIDEN, // Identificador de funções
-//     TYIDEN, // Identificador de tipos
-//     PRIDEN, // Identificador de procedimentos
-// }
-
 static mut linha: usize = 0;
 
 fn erro_msg(msg: String){
