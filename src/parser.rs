@@ -648,7 +648,7 @@ fn statement() {
         Tokens::With => with_statement(),
         Tokens::Goto => goto_statement(),
         Tokens::Begin => compound_statement(),
-        _ => {},
+        _ => internal_functions(),
     }
 }
 
@@ -992,5 +992,32 @@ fn factor() {
         } else {
             infipo();
         }
+    }
+}
+
+/* internal_functions ::= read ( identifier_list )
+| write ( identifier_list )
+*/
+fn internal_functions(){
+    let mut simbolo = prox_token();
+
+    match simbolo.tipo {
+        Tokens::Read => {
+            consome(simbolo, Tokens::Read);
+            simbolo = prox_token();
+            consome(simbolo, Tokens::AbreParenteses);
+            identifier_list();
+            simbolo = prox_token();
+            consome(simbolo, Tokens::FechaParenteses);
+        },
+        Tokens::Write => {
+            consome(simbolo, Tokens::Write);
+            simbolo = prox_token();
+            consome(simbolo, Tokens::AbreParenteses);
+            identifier_list();
+            simbolo = prox_token();
+            consome(simbolo, Tokens::FechaParenteses);
+        },
+        _ => {},
     }
 }
