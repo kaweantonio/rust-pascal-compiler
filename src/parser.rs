@@ -52,7 +52,7 @@ pub fn ASD(){
     // }
 
     program();
-    print!("\n\nAnálise sintática não encontrou nenhum erro.");
+    print!("\n\nAnálise sintática não encontrou erros.");
 }
 
 // program ::= program identifier [ ( identifier_list ) ] ; block .
