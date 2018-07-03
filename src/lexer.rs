@@ -468,7 +468,7 @@ fn analisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Mais, lin: linha, col: 0};
                 },
                 "-" => {
-                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Menor, lin: linha, col: 0};
+                    prox_token = Token{tok: token.to_string(), tipo: Tokens::Menos, lin: linha, col: 0};
                 },
                 "*" => {
                     prox_token = Token{tok: token.to_string(), tipo: Tokens::Multiplicacao, lin: linha, col: 0};
