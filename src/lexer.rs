@@ -505,9 +505,9 @@ fn analisaLexico(tabela:&mut Vec<String>, linha: i32) -> Vec<Token> {
 
 fn tratamento(mut vec_tok: Vec<Token>) -> Vec<Token>{
     let mut tamanho = vec_tok.len()-1;
+    let mut i = 0;
 
-    for i in 0..tamanho{
-        println!("{}", i);
+    while i < tamanho {
         if vec_tok[i].tipo == Tokens::DoisPontos && vec_tok[i+1].tipo == Tokens::Igual{
             vec_tok[i].tipo = Tokens::Atribuicao;
             vec_tok[i].tok = ":=".to_string();
@@ -531,10 +531,19 @@ fn tratamento(mut vec_tok: Vec<Token>) -> Vec<Token>{
         } else if vec_tok[i].tipo == Tokens::Divisao && vec_tok[i+1].tipo == Tokens::Divisao {
             vec_tok.split_off(i);
             return vec_tok;
+        } else if vec_tok[i].tipo == Tokens::FatorEscala {
+            if i > 0 {
+                if vec_tok[i-1].tipo != Tokens::Ponto {
+                    vec_tok[i].tipo = Tokens::Identificador;
+                } 
+            } else {
+                vec_tok[i].tipo = Tokens::Identificador;
+            }
         }
+        i = i+1;
     }
 
-    let mut i = 0;
+    i = 0;
     while i < tamanho {
         if vec_tok[i].tipo == Tokens::Aspas || vec_tok[i].tipo == Tokens::Apostrofo {
             let mut j = i + 1;
