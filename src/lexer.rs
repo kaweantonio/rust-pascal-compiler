@@ -211,7 +211,9 @@ lazy_static! {
 }
 
 fn tabelaSimbolos<'a>() -> Vec<Vec<String>> {
-    let mut file = File::open("src/input.txt").expect("Não foi possível abrir o arquivo");
+    // let arquivo: String = read!("{}\r\n");
+    // print!("{:?}", arquivo);
+    let mut file = File::open("Exemplos/Exemplo5/pgma.pas").expect("Não foi possível abrir o arquivo");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Não foi possível ler o arquivo");
 
