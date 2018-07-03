@@ -100,6 +100,13 @@ fn program(){
 
     simbolo = prox_token();
     consome(simbolo, Tokens::Ponto);
+
+    unsafe {
+        let data = tabelaVariaveis.lock().unwrap();
+        for i in 0..data.len(){
+            println!("{:?}", data[i]);
+        }
+    }
 }
 
 /*
