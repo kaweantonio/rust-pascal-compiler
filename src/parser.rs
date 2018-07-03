@@ -52,6 +52,12 @@ fn consome(token_atual: lexer::Token, token_esperado: Tokens){
         erro(token_atual, token_esperado);
     }
     else {
+        let simb = Simbolo {
+            tok: token_atual.tok,
+            tipo: token_atual.tipo,
+        };
+
+        tabelaSimb.lock().unwrap().push(simb);
         unsafe {
             lexer::eraseToken(linha);
         }
