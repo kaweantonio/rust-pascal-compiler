@@ -8,3 +8,4 @@ description = "Compilador Pascal em Rust"
 
 [dependencies]
 lazy_static = "1.0.0"
+text_io = "0.1.7"

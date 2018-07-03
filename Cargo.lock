@@ -8,7 +8,14 @@ name = "rust-pascal-compiler"
 version = "0.1.0"
 dependencies = [
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "text_io 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "text_io"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [metadata]
 "checksum lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c8f31047daa365f19be14b47c29df4f7c3b581832407daabe6ae77397619237d"
+"checksum text_io 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "9658b61ebd1d2a40c276ba2335890b9eb6550b67458a6fbce2022e58c3350a50"
