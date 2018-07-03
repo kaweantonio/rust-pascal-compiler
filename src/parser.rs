@@ -19,10 +19,12 @@ pub struct Variavel {
 lazy_static! {
     pub static ref tabelaSimb: Mutex<Vec<Simbolo>> = Mutex::new(Vec::<Simbolo>::new());
     pub static ref tabelaVariaveis: Mutex<Vec<Variavel>> = Mutex::new(Vec::<Variavel>::new());
+    pub static ref codigoAMEM: Mutex<Vec<String>> = Mutex::new(Vec::<String>::new());
 }
 
 static mut linha: usize = 0;
 static mut pos_atual: i32 = 0; // eh o contador das variaveis existentes
+static mut contador_var: usize = 0; 
 
 fn erro_msg(msg: String){
     println!("{}", msg);
@@ -105,6 +107,11 @@ fn program(){
         let data = tabelaVariaveis.lock().unwrap();
         for i in 0..data.len(){
             println!("{:?}", data[i]);
+        }
+
+        let data2 = codigoAMEM.lock().unwrap();
+        for i in 0..data2.len(){
+            println!("{:?}", data2[i]);
         }
     }
 }
@@ -443,7 +450,15 @@ fn var_declaration_part(){
 // var_declaration ::= identifier_list_var : type
 fn var_declaration(){
     let mut simbolo;
+    unsafe {
+        contador_var = 0;
+    }
     identifier_list_var();
+
+    unsafe {
+        let string = format!("{}{}", "AMEM ", contador_var.to_string());
+        codigoAMEM.lock().unwrap().push(string);
+    }
 
     simbolo = prox_token();
 
@@ -475,6 +490,7 @@ fn identifier_list_var(){
         };
         tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
         pos_atual = pos_atual + 1;
+        contador_var = contador_var + 1;
     }
     simbolo = prox_token();
     while simbolo.tipo == Tokens::Virgula {
@@ -488,6 +504,7 @@ fn identifier_list_var(){
             };
             tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
             pos_atual = pos_atual + 1;
+            contador_var = contador_var + 1;
         }
         simbolo = prox_token();
     }
