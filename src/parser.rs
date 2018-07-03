@@ -1,7 +1,25 @@
 use lexer;
 use lexer::Tokens;
+use std::sync::Mutex;
 
 use std::process::exit;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Simbolo {
+    pub tok: String,
+    pub tipo: Tokens,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Variavel {
+    pub tok: String,
+    pub posicao: i32,
+}
+
+lazy_static! {
+    pub static ref tabelaSimb: Mutex<Vec<Simbolo>> = Mutex::new(Vec::<Simbolo>::new());
+    pub static ref tabelaVariaveis: Mutex<Vec<Variavel>> = Mutex::new(Vec::<Variavel>::new());
+}
 
 static mut linha: usize = 0;
 
