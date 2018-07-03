@@ -62,11 +62,19 @@ fn program(){
     identifier();
     simbolo = prox_token();
 
+    if (simbolo.tipo == Tokens::AbreParenteses){
+        consome(simbolo, Tokens::AbreParenteses);
+        identifier_list();
+        simbolo = prox_token();
+        consome(simbolo, Tokens::FechaParenteses);
+        simbolo = prox_token();
+    }
+
     consome(simbolo, Tokens::PontoVirgula);
     block();
 
-    // simbolo = prox_token();
-    // consome(simbolo, Tokens::Ponto);
+    simbolo = prox_token();
+    consome(simbolo, Tokens::Ponto);
 }
 
 /*
