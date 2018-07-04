@@ -1,58 +1,7 @@
-program exampleControlFlow;
-const
-    Name = 'Tao Yue';
-    FirstLetter = 'a';
-    Year = 1997;
-    pi = 3.1415926535897932;
-type
-    simple_integer_array = array [1..10] of Integer;
-    more_complex_array = array [0..5,1..3] of Integer;
-    record_foo = record 
-                    Bar: Integer;
-                end;
-    empty_record = record end;
-    range = 1..10;
-var
-    IdentifierList1 : Integer;
-    IdentifierList2 : Char;
-    IdentifierList3 : Boolean;
-    IdentifierList4 : Real;
-procedure Hello;
+program teste;
+var a,b,c,i: Integer;
+    d: Real;
 begin
-  ShowMessage ('Hello world!');
-end;
-function Double (Value: Integer) : Integer;
-begin
-  Double := Value * 2;
-end;
-
-function Double2 (Value: Integer) : Integer;
-begin
-  Result := Value * 2;
-end;
-begin
-    // comentário
-    if 20 = 5 then
-        begin
-            writeln('unreachable');
-        end
-    else if 5 + 7 < 30 then
-        begin
-            writeln('this will print');
-        end
-    else if not true then
-        begin
-            writeln('this will not print');
-        end
-    else if 20 <> 5 then
-        begin
-            writeln('<> means not equal');
-        end
-    else
-        begin
-            writeln('this will not print');
-        end
-    // $FF;
-    // %11111111;
-    // &17;
+    b := 5;
+    a := (a+b)*c;
 end.

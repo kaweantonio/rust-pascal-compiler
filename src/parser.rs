@@ -66,6 +66,40 @@ fn consome(token_atual: lexer::Token, token_esperado: Tokens){
     }
 }
 
+pub fn hasSymbol() -> bool {
+    return !tabelaSimb.lock().unwrap().is_empty();
+}
+
+pub fn getSymbol() -> Simbolo {
+    return tabelaSimb.lock().unwrap()[0].clone();
+}
+
+pub fn lookahead() -> Simbolo {
+    if tabelaSimb.lock().unwrap().len() > 1 {
+        return tabelaSimb.lock().unwrap()[1].clone();
+    } else {
+        return Simbolo {
+            tok: ("").to_string(),
+            tipo: Tokens::Comentario,
+        };   
+    }
+}
+
+pub fn eraseSymbol(){
+    tabelaSimb.lock().unwrap().remove(0);
+}
+
+pub fn procura_var(token: String) -> i32 {
+    let data = tabelaVariaveis.lock().unwrap();
+    for i in 0..data.len(){
+        if (data[i].tok == token){
+            return data[i].posicao;
+        }
+    }
+
+    return 0;
+}
+
 pub fn ASD(){
     lexer::lexico();
 
@@ -112,6 +146,11 @@ fn program(){
         let data2 = codigoAMEM.lock().unwrap();
         for i in 0..data2.len(){
             println!("{:?}", data2[i]);
+        }
+
+        let data3 = tabelaSimb.lock().unwrap();
+        for i in 0..data3.len(){
+            println!("{:?}", data3[i]);
         }
     }
 }
@@ -475,7 +514,6 @@ fn var_declaration(){
             erro_msg(string);
         },
     }
-
 }
 
 // identifier_list_var ::= identifier { , identifier }
@@ -488,9 +526,11 @@ fn identifier_list_var(){
             tok: aux.tok,
             posicao: pos_atual,
         };
-        tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
-        pos_atual = pos_atual + 1;
-        contador_var = contador_var + 1;
+        if (!tabelaVariaveis.lock().unwrap().contains(&var_atual)) {
+            tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
+            pos_atual = pos_atual + 1;
+            contador_var = contador_var + 1;
+        }
     }
     simbolo = prox_token();
     while simbolo.tipo == Tokens::Virgula {
@@ -502,9 +542,11 @@ fn identifier_list_var(){
                 tok: aux.tok,
                 posicao: pos_atual,
             };
-            tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
-            pos_atual = pos_atual + 1;
-            contador_var = contador_var + 1;
+            if (!tabelaVariaveis.lock().unwrap().contains(&var_atual)) {
+                tabelaVariaveis.lock().unwrap().push(var_atual); // adicionando variavel atual na tabelavariaveis
+                pos_atual = pos_atual + 1;
+                contador_var = contador_var + 1;
+            }
         }
         simbolo = prox_token();
     }
@@ -696,6 +738,7 @@ fn labeled_statement() {
 
     statement(); 
 }
+
 /*
 statement ::= assign_statement
 | procedure_call
