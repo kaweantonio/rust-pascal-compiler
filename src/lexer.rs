@@ -539,6 +539,22 @@ fn tratamento(mut vec_tok: Vec<Token>) -> Vec<Token>{
             } else {
                 vec_tok[i].tipo = Tokens::Identificador;
             }
+        } else if vec_tok[i].tipo == Tokens::Numero {
+            if vec_tok[i+1].tipo == Tokens::Ponto {
+                if vec_tok[i+2].tipo == Tokens::Numero {
+                    let mut aux: String = vec_tok[i].tok.to_owned();
+                    let str1: String = vec_tok[i+1].tok.to_owned();
+                    let str2: String = vec_tok[i+2].tok.to_owned();
+
+                    aux.push_str(&str1);
+                    aux.push_str(&str2);
+
+                    vec_tok[i].tok = aux.to_string();
+                    vec_tok.remove(i+1);
+                    vec_tok.remove(i+1);
+                    tamanho = tamanho - 2;
+                }
+            }
         }
         i = i+1;
     }

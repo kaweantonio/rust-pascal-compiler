@@ -97,7 +97,7 @@ pub fn procura_var(token: String) -> i32 {
         }
     }
 
-    return 0;
+    return -1;
 }
 
 pub fn ASD(){
@@ -771,7 +771,8 @@ fn statement() {
         Tokens::With => with_statement(),
         Tokens::Goto => goto_statement(),
         Tokens::Begin => compound_statement(),
-        _ => internal_functions(),
+        Tokens::Read | Tokens::Write => internal_functions(),
+        _ => {},
     }
 }
 
@@ -848,6 +849,8 @@ fn for_statement(){
     infipo();
     simbolo = prox_token();
     consome(simbolo, Tokens::Atribuicao);
+    simbolo = prox_token();
+    expr();
     simbolo = prox_token();
     match simbolo.tipo {
         Tokens::To => consome(simbolo, Tokens::To),

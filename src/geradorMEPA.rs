@@ -1,11 +1,13 @@
 use lexer::Tokens;
 use parser;
+use parser::Simbolo;
 use std::sync::Mutex;
 use std::process::exit;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Rotulo {
     pub tok: String,
+    pub rotulo: String,
     pub numero: i32,
 }
 
@@ -21,15 +23,7 @@ static mut escopo: &'static str = "";
 fn erro_msg(msg: String){
     println!("{}", msg);
     exit(1);
-}
 
-fn erro(simbolo_lido: parser::Simbolo, simbolo_esperado: Tokens){
-    println!("ERRO na GERAÇAO MEPA: Esperado simbolo {0}, mas encontrou {1}", simbolo_esperado, simbolo_lido.tipo);
-    
-    unsafe {
-        print!("{:?}", parser::tabelaSimb.lock().unwrap());
-    }
-    exit(1);
 }
 
 fn prox_simbolo() -> parser::Simbolo {
@@ -42,13 +36,8 @@ fn prox_simbolo() -> parser::Simbolo {
     }
 }
 
-fn consome(simbolo_atual: parser::Simbolo, simbolo_esperado: Tokens){
-    if simbolo_atual.tipo != simbolo_esperado {
-        erro(simbolo_atual, simbolo_esperado);
-    }
-    else {
-        parser::eraseSymbol();
-    }
+fn consome(){
+    parser::eraseSymbol();
 }
 
 fn gera_mepa(codigo: String){
@@ -59,13 +48,36 @@ fn cria_rotulo(token: String){
     unsafe {
         let rotulo = Rotulo {
             tok: token,
+            rotulo: ["L", contador_rotulo.to_string().as_ref()].join(""),
             numero: contador_rotulo,
         };
-
-        gera_mepa(["R", contador_rotulo.to_string().as_ref()].join(""));
         tabelaRotulos.lock().unwrap().push(rotulo);
         contador_rotulo = contador_rotulo + 1;
     }
+}
+
+fn procura_rotulo(token: String) -> String {
+    let data = tabelaRotulos.lock().unwrap();
+
+    for i in 0..data.len(){
+        if data[i].tok == token {
+            return data[i].rotulo.clone();
+        }
+    }
+
+    return "".to_string();
+}
+
+fn procura_rotulo_numero(num: i32) -> String {
+    let data = tabelaRotulos.lock().unwrap();
+
+    for i in 0..data.len(){
+        if data[i].numero == num {
+            return data[i].rotulo.clone();
+        }
+    }
+
+    return "".to_string();
 }
 
 fn empilha(x: String){
@@ -80,27 +92,47 @@ fn desempilha() -> String {
     }
 }
 
-fn instrucao(token: Tokens) -> String {
-    match token {
-        Tokens::Mais => return "SOMA".to_string(),
-        Tokens::Menos => return "SUB".to_string(),
-        Tokens::Multiplicacao => return "MULT".to_string(),
-        Tokens::Divisao => return "DIV".to_string(),
-        Tokens::Maior => return "CMMA".to_string(),
-        Tokens::MaiorIgual => return "CMAG".to_string(),
-        Tokens::Menor => return "CMME".to_string(),
-        Tokens::MenorIgual => return "CMEG".to_string(),
-        Tokens::Igual => return "CMIG".to_string(),
+fn instrucao(token: String) -> String {
+    match token.to_lowercase().as_ref() {
+        "+" => return "SOMA".to_string(),
+        "-" => return "SUBT".to_string(),
+        "*" => return "MULT".to_string(),
+        "/" => return "DIVI".to_string(),
+        ">" => return "CMMA".to_string(),
+        ">=" => return "CMAG".to_string(),
+        "<" => return "CMME".to_string(),
+        "<=" => return "CMEG".to_string(),
+        "=" => return "CMIG".to_string(),
+        "<>" => return "CMDG".to_string(),
+        "and" => return "CONJ".to_string(),
         _ => return "".to_string(),
     }
+}
+
+fn prioridade(a: String, b: String) -> bool {
+    let mut pa = 0;
+    let mut pb = 0;
+
+    match a.to_lowercase().as_ref() {
+        "(" => pa = 3,
+        "*" | "/" => pa = 2,
+        _ => pa = 1, // Tokens::Mais | Tokens::Menos | Tokens::Igual..Tokens::MaiorIgual | Tokens::And
+    }
+
+    match b.to_lowercase().as_ref() {
+        "(" => pb = 0,
+        "*" | "/" => pb = 2,
+        "+" | "-" | "=" | "<" | "<=" | ">" | ">=" | "<>" | "and" => pb = 1,
+        _ => pb = 0,
+    }
+
+    return pa > pb;
 }
 
 pub fn MEPA(){
     parser::ASD();
 
-    empilha('('.to_string());
-
-    program();
+    inicio_leitura();
 
     print!("\n");
 
@@ -108,278 +140,206 @@ pub fn MEPA(){
     for i in 0..data.len(){
         println!("{}", data[i]);
     }
-
-    let data2 = pilha_pol.lock().unwrap();
-    for i in 0..data2.len(){
-        println!("{}", data2[i]);
-    }
 }
 
-// program ::= program identifier [ ( identifier_list ) ] ; block .
-fn program(){
-    let mut simbolo = prox_simbolo();
-    consome(simbolo, Tokens::Program);
-
+fn inicio_leitura(){
+    // program
     gera_mepa("INPP".to_string());
 
-    identifier();
-    simbolo = prox_simbolo();
-
-    if (simbolo.tipo == Tokens::AbreParenteses){
-        consome(simbolo, Tokens::AbreParenteses);
-        identifier_list();
-        simbolo = prox_simbolo();
-        consome(simbolo, Tokens::FechaParenteses);
-        simbolo = prox_simbolo();
+    while prox_simbolo().tipo != Tokens::Begin { 
+        consome();
     }
 
-    consome(simbolo, Tokens::PontoVirgula);
-    
-    unsafe {
-        escopo = "program";
+    // var_declaration
+    consome();
+
+    let mut data = parser::codigoAMEM.lock().unwrap();
+    for i in 0..data.len(){
+        gera_mepa(data.remove(0));
     }
 
-    block();
+    cria_rotulo("PROGRAM".to_string());
 
-    simbolo = prox_simbolo();
-    consome(simbolo, Tokens::Ponto);
+    gera_mepa(["DSVS", procura_rotulo("PROGRAM".to_string()).as_ref()].join(" "));
+
+    inicio_programa();
 }
 
-/*
-block ::= { [label_declaration_part]
-            [const_declaration_part]
-            [type_declaration_part]
-            [var_declaration_part]
-            [subroutine_declaration_part] }
-            compound_statement
-*/
-fn block(){
+fn inicio_programa(){
     let mut simbolo = prox_simbolo();
-    // if simbolo.tipo == Tokens::Label {
-    //     label_declaration_part();
-    //     simbolo = prox_simbolo();
-    // }
 
-    // if simbolo.tipo == Tokens::Const{
-    //     const_declaration_part();
-    //     simbolo = prox_simbolo();
-    // }
-
-    // if simbolo.tipo == Tokens::Type{
-    //     type_declaration_part();
-    //     simbolo = prox_simbolo();
-    // }
-
-    if simbolo.tipo == Tokens::Var{
-        var_declaration_part();
-        simbolo = prox_simbolo();
+    if simbolo.tipo == Tokens::Begin {
+        consome();
     }
 
-    // if simbolo.tipo == Tokens::Procedure || simbolo.tipo == Tokens::Function {
-    //      subroutine_declaration_part();
-    // }
-    
-    compound_statement();
+    simbolo = prox_simbolo();
+    loop {
+        match simbolo.tipo {
+            Tokens::Identificador => atribuicao(),
+            Tokens::If => if_statement(),
+            Tokens::Else => else_statement(),
+            Tokens::While => while_statement(),
+            Tokens::Read => read_statement(),
+            Tokens::Write => write_statement(),
+            Tokens::For => for_statement(),
+            _ => {},
+        }
+
+        simbolo = prox_simbolo();
+        if simbolo.tipo == Tokens::End {
+            break;
+        }
+    }
 }
 
-// identifier_list ::= identifier { , identifier }
-fn identifier_list(){
+fn atribuicao(){
+    let mut simbolo = prox_simbolo();
+    let posicao = parser::procura_var(simbolo.tok);
+    consome(); // identificador
+    consome(); // símbolo atribuição
+
+    if posicao >= 0 {
+        let mut expressao = vec![prox_simbolo()];
+        consome();
+
+        'atribuicao: loop {
+            simbolo = prox_simbolo();
+            if simbolo.tipo == Tokens::Else {
+                expressao.push(prox_simbolo());
+                break 'atribuicao;
+            }
+            if simbolo.tipo == Tokens::PontoVirgula {
+                expressao.push(prox_simbolo());
+                consome();
+                break 'atribuicao;
+            }
+            expressao.push(prox_simbolo());
+            consome();
+        }
+
+        expressao_mepa(expressao);
+
+        simbolo = prox_simbolo();
+        if simbolo.tipo == Tokens::PontoVirgula {
+            consome();
+        }
+
+        gera_mepa(["ARMZ", posicao.to_string().as_ref()].join(" "));
+    }
+}
+
+fn expressao_mepa(expr: Vec<Simbolo>){
+    let mut i = 0;
     let mut simbolo;
+    let mut posicao;
+    empilha('('.to_string());
 
-    identifier();
-    simbolo = prox_simbolo();
-    while simbolo.tipo == Tokens::Virgula {
-        consome(simbolo, Tokens::Virgula);
-        identifier();
-        simbolo = prox_simbolo();
-    }
-}
+    while i < expr.len() {
+        simbolo = &expr[i];
 
-fn identifier(){
-    let simbolo = prox_simbolo();
-    let aux = prox_simbolo();
-    consome(simbolo, Tokens::Identificador);
-}
+        let salva = simbolo.clone();
 
-fn ehString() -> bool {
-    let simbolo = prox_simbolo();
-    return simbolo.tipo == Tokens::Apostrofo || simbolo.tipo == Tokens::Aspas;
-}
+        match simbolo.tipo {
+            Tokens::True => {
+                gera_mepa(["CRCT", "1"].join(" "));
+            },
+            Tokens::False => {
+                gera_mepa(["CRCT", "0"].join(" "));
+            }
+            Tokens::Numero => {
+                let string = &expr[i].tok.to_owned();
 
-fn string(){
-    // sinaliza se string abriu com aspas [true] ou apóstrofo [false]
-    let mut tipo = false;
-    let mut simbolo = prox_simbolo();
-    if simbolo.tipo == Tokens::Apostrofo {
-        consome(simbolo, Tokens::Apostrofo);
-    } else {
-        tipo = true;
-        consome(simbolo, Tokens::Aspas);
-    }
+                gera_mepa(["CRCT", string.as_ref()].join(" "));
+            },
+            Tokens::Identificador => {
+                posicao = parser::procura_var(salva.tok);
+                gera_mepa(["CRVL", posicao.to_string().as_ref()].join(" "));
+            },
+            Tokens::AbreParenteses => {
+                empilha('('.to_string());
+            },
+            Tokens::FechaParenteses | Tokens::PontoVirgula | Tokens::Then | Tokens::Else | Tokens::Virgula | Tokens::Do => {
+                loop {
+                    let aux = desempilha();
+                    if aux.clone() != '('.to_string() {
+                        let inst = instrucao(aux);
+                        gera_mepa(inst);
+                    } else {
+                        break;
+                    }
+                }
+            },
+            Tokens::Mais | Tokens::Menos | Tokens::Multiplicacao | Tokens::Divisao | Tokens::Menor | Tokens:: MenorIgual | 
+            Tokens::Maior | Tokens::MaiorIgual | Tokens::Igual | Tokens::Diferente | Tokens::And => {
+                let simbolo = salva.clone();
+                let mut aux;
+                loop {
+                    aux = desempilha();
+                    let aux2 = aux.clone();
+                    if prioridade(simbolo.tok.clone(), aux) {
+                        empilha(aux2);
+                        empilha(simbolo.tok);
 
-    simbolo = prox_simbolo();
-    while (simbolo.tipo != Tokens::Apostrofo && simbolo.tipo != Tokens::Aspas){
-        identifier();
-        simbolo = prox_simbolo();
-    }
-    if(!tipo){
-        consome(simbolo, Tokens::Apostrofo);
-    } else {
-        consome(simbolo, Tokens::Aspas);
-    }
-}
-
-fn ehSequenciaDigitos() -> bool {
-    unsafe {
-        let aux = parser::lookahead();
-        return aux.tipo != Tokens::Ponto && aux.tipo != Tokens::FatorEscala;
-    }
-}
-
-fn number_list(){
-    number();
-
-    let mut simbolo = prox_simbolo();
-
-    while simbolo.tipo == Tokens::Virgula {
-        consome(simbolo, Tokens::Virgula);
-        number();
-        simbolo = prox_simbolo();
-    }
-}
-
-fn number() {
-    let mut simbolo = prox_simbolo();
-    let mut aux = prox_simbolo().tok;
-
-    consome(simbolo, Tokens::Numero);
-
-    simbolo = prox_simbolo();
-    unsafe {
-        if simbolo.tipo == Tokens::Ponto && parser::lookahead().tipo == Tokens::Numero {
-            aux = format!("{}{}", aux, prox_simbolo().tok);
-            consome(simbolo, Tokens::Ponto);
-            simbolo = prox_simbolo();
-            aux = format!("{}{}", aux, prox_simbolo().tok);
-            consome(simbolo, Tokens::Numero);
-            simbolo = prox_simbolo();
+                        break;
+                    } else {
+                        gera_mepa(instrucao(aux2));
+                    }
+                }
+            },
+            _ => {},
         }
-    }
 
-    empilha(aux);
-}
-
-fn temSinal() -> bool {
-    let simbolo = prox_simbolo();
-    return simbolo.tipo == Tokens::Mais || simbolo.tipo == Tokens::Menos;
-}
-
-fn sinal(){
-    let simbolo = prox_simbolo();
-    if simbolo.tipo == Tokens::Mais {
-        empilha(instrucao(Tokens::Mais));
-        consome(simbolo, Tokens::Mais);
-    } else {
-        empilha(instrucao(Tokens::Menos));
-        consome(simbolo, Tokens::Menos);
+        i = i + 1;
     }
 }
 
-// var_declaration_part ::= var var_declaration { ; var_declaration} ;
-fn var_declaration_part(){
-    let mut simbolo = prox_simbolo();
-    consome(simbolo, Tokens::Var);
-    var_declaration();
-
-    gera_mepa(parser::codigoAMEM.lock().unwrap().remove(0));
-
-    simbolo = prox_simbolo();
-    unsafe {
-        while simbolo.tipo == Tokens::PontoVirgula && parser::lookahead().tipo == Tokens::Identificador{
-            consome(simbolo, Tokens::PontoVirgula);
-            var_declaration();
-            gera_mepa(parser::codigoAMEM.lock().unwrap().remove(0));
-            simbolo = prox_simbolo();
-        }
-    }
-
-    consome(simbolo, Tokens::PontoVirgula);
-}
-
-// var_declaration ::= identifier_list_var : type
-fn var_declaration(){
+fn if_statement() {
     let mut simbolo;
-    identifier_list();
+    // consome if
+    consome();
 
-    simbolo = prox_simbolo();
+    let mut expressao = vec![prox_simbolo()];
+    consome();
 
-    consome(simbolo, Tokens::DoisPontos);
-    simbolo = prox_simbolo();
-
-    match simbolo.tipo {
-        Tokens::Integer => consome(simbolo, Tokens::Integer),
-        Tokens::Real => consome(simbolo, Tokens::Real),
-        Tokens::Char => consome(simbolo, Tokens::Char),
-        Tokens::Boolean => consome(simbolo, Tokens::Boolean),
-        _ => {
-            let string = ["Erro: Esperado algum tipo de variável básico [Integer, Real, Char, ou Boolean] mas foi encontrado", simbolo.tok.as_ref()].join("\n");
-            erro_msg(string);
-        },
-    }
-}
-
-// compound_statement ::= begin labeled_statement { ; labeled_statement  } end
-fn compound_statement() {
-    let mut simbolo = prox_simbolo();
-    consome(simbolo, Tokens::Begin);
-
-    
-
-    unsafe {
-        cria_rotulo(escopo.to_string());
-    }
-
-    labeled_statement();
-    simbolo = prox_simbolo();
-
-    'compound_statement_loop: loop {
-        if simbolo.tipo != Tokens::PontoVirgula {
-            break 'compound_statement_loop;
+    'if_loop: loop {
+        simbolo = prox_simbolo();
+        if simbolo.tipo == Tokens::Then {
+            expressao.push(prox_simbolo());
+            consome();
+            break 'if_loop;
         }
-
-        consome(simbolo, Tokens::PontoVirgula);
-        labeled_statement();
-        simbolo = prox_simbolo();
+        expressao.push(prox_simbolo());
+        consome();
     }
 
-    consome(simbolo, Tokens::End);
+    expressao_mepa(expressao);
+
+    cria_rotulo("if".to_string());
+    unsafe {
+        gera_mepa(["DSVF", procura_rotulo_numero(contador_rotulo-1).as_ref()].join(" "));
+    }
 }
 
-// labeled_statement ::= [ number :] statement   
-fn labeled_statement() {
+fn else_statement() {
     let mut simbolo = prox_simbolo();
+    let mut rotulo = 0;
+    unsafe {
+        
+    }
+    // consome else
+    consome();
 
-    if simbolo.tipo == Tokens::Numero {
-        consome(simbolo, Tokens::Numero);
-        simbolo = prox_simbolo();
-        consome(simbolo, Tokens::DoisPontos);
+    cria_rotulo("else".to_string());
+    unsafe {
+        rotulo = contador_rotulo;
+        gera_mepa(["DSVS", procura_rotulo_numero(rotulo-1).as_ref()].join(" "));
+        gera_mepa([procura_rotulo_numero(rotulo-2), "NADA".to_string()].join(" "));
     }
 
-    statement(); 
+    statement();
+    // gera_mepa([procura_rotulo_numero(rotulo-1), "NADA".to_string()].join(" "));
 }
 
-/*
-statement ::= assign_statement
-| procedure_call
-| if_statement
-| case_statement
-| while_statement
-| repeat_statement
-| for_statement
-| with_statement
-| goto_statement
-| compound_statement
-| Vazio */
 fn statement() {
     let mut simbolo = prox_simbolo();
     match simbolo.tipo {
@@ -387,13 +347,16 @@ fn statement() {
             unsafe {
                 simbolo = parser::lookahead();
                 match simbolo.tipo {
-                    Tokens::AbreColchete | Tokens::Ponto | Tokens::Atribuicao => assign_statement(),
+                    Tokens::AbreColchete | Tokens::Ponto | Tokens::Atribuicao => atribuicao(),
                     // Tokens::AbreParenteses | _ => procedure_call(),
                     _ => {},
                 }
             }
         },
-        // Tokens::If => if_statement(),
+        Tokens::If => { 
+            if_statement()
+            
+        },
         // Tokens::Case => case_statement(),
         // Tokens::While => while_statement(),
         // Tokens::Repeat => repeat_statement(),
@@ -401,255 +364,194 @@ fn statement() {
         // Tokens::With => with_statement(),
         // Tokens::Goto => goto_statement(),
         // Tokens::Begin => compound_statement(),
-        // _ => internal_functions(),
+        // Tokens::Read | Tokens::Write => internal_functions(),
         _ => {},
     }
 }
 
-// assign_statement ::= identifier [ infipo ] := expr
-fn assign_statement(){
+fn while_statement(){
+    // consome while
+    consome();
     let mut simbolo;
-
-    let aux = prox_simbolo();
-    identifier();
-    simbolo = prox_simbolo();
-
-    if simbolo.tipo == Tokens::AbreColchete || simbolo.tipo == Tokens::Ponto {
-        infipo();
-        simbolo = prox_simbolo();
+    let mut rotulo1;
+    let mut rotulo2;
+    cria_rotulo("while".to_string());
+    unsafe {
+        rotulo1 = contador_rotulo;
+        gera_mepa([procura_rotulo_numero(contador_rotulo-1), "NADA".to_string()].join(" "));
     }
-
-    consome(simbolo, Tokens::Atribuicao);
-
-    expr();
-    fecha_expr();
-    gera_mepa(["ARMZ ", parser::procura_var(aux.tok).to_string().as_ref()].join(""));
-}
-
-/*
-infipo ::= [ expr { , expr } ] infipo
-| . identifier infipo
-| Vazio
-*/
-fn infipo() {
-    let mut simbolo = prox_simbolo();
     
-    match simbolo.tipo {
-        Tokens::AbreColchete => {
-            consome(simbolo, Tokens::AbreColchete);
-            expr();
+    let mut expressao = vec![prox_simbolo()];
+    consome();
+
+    'while_loop: loop {
+        simbolo = prox_simbolo();
+        if simbolo.tipo == Tokens::Do {
+            expressao.push(prox_simbolo());
+            consome();
+            break 'while_loop;
+        }
+        expressao.push(prox_simbolo());
+        consome();
+    }
+
+    expressao_mepa(expressao);
+
+    unsafe {
+        cria_rotulo("do".to_string());
+        rotulo2 = contador_rotulo;
+        gera_mepa(["DSVF", procura_rotulo_numero(rotulo2-1).as_ref()].join(" "));
+    }
+    statement();
+
+    unsafe {
+        gera_mepa(["DSVS", procura_rotulo_numero(rotulo1-1).as_ref()].join(" "));
+        gera_mepa([procura_rotulo_numero(rotulo2-1), "NADA".to_string()].join(" "));
+    }
+}
+
+fn read_statement(){
+    let mut simbolo;
+    consome(); // consome read
+    consome(); // consome '('
+    'read_loop: loop {
+        simbolo = prox_simbolo();
+
+        match simbolo.tipo {
+            Tokens::Identificador => {
+                gera_mepa("LEIT".to_string());
+                gera_mepa(["ARMZ", simbolo.tok.as_ref()].join(" "));
+                consome();
+            },
+            Tokens::Virgula => consome(),
+            _ => {
+                consome(); // consome ')'
+                break 'read_loop;
+            }
+        }
+    }
+
+    consome(); // consome ';'
+}
+
+fn write_statement(){
+    let mut simbolo;
+    consome(); // consome read
+    consome(); // consome '('
+
+    'write_outer_loop: loop {
+        let mut expressao = vec![prox_simbolo()];
+        consome();
+        'write_inner_loop: loop {
             simbolo = prox_simbolo();
-            'infipo_loop: loop {
-                if simbolo.tipo != Tokens::Virgula {
-                    break 'infipo_loop;
-                }
-
-                consome(simbolo, Tokens::Virgula);
-                expr();
-                simbolo = prox_simbolo();
+            if simbolo.tipo == Tokens::Virgula {
+                expressao.push(prox_simbolo());
+                consome();
+                expressao_mepa(expressao);
+                gera_mepa("IMPR".to_string());
+                break 'write_inner_loop;
+            } else if simbolo.tipo == Tokens::FechaParenteses {
+                expressao.push(prox_simbolo());
+                consome();
+                expressao_mepa(expressao);
+                gera_mepa("IMPR".to_string());
+                break 'write_inner_loop;
             }
-            consome(simbolo, Tokens::FechaColchete);
-        },
-        Tokens::Ponto => {
-            consome(simbolo, Tokens::Ponto);
-            identifier();
-            infipo();
+            expressao.push(prox_simbolo());
+            consome();
         }
-        _ => {}
-    }
-}
-
-// expr_list ::= expr { , expr }
-fn expr_list() {
-    let mut simbolo;
-    expr();
-    simbolo = prox_simbolo();
-    'expr_list_loop: loop {
-        if simbolo.tipo != Tokens::Virgula {
-            break 'expr_list_loop;
-        }
-        consome(simbolo, Tokens::Virgula);
-        expr();
+        
         simbolo = prox_simbolo();
-    }
-}
-
-// expr ::= simple_expr [ relop simple_expr ]
-fn expr() {
-    let simbolo;
-    simple_expr();
-    simbolo = prox_simbolo();
-    match simbolo.tipo {
-        Tokens::Igual | Tokens::Menor | Tokens::Maior | Tokens::Diferente | Tokens::MaiorIgual | Tokens::MenorIgual | Tokens::In => {
-            relop();
-            simple_expr();
-        },
-        _ => {}
-    }
-}
-
-fn fecha_expr(){
-    let mut simbolo;
-
-    loop {
-        simbolo = desempilha();
-        if simbolo != '('.to_string() && simbolo != "None".to_string() {
-            if simbolo.parse::<i32>().is_ok() {
-                gera_mepa(["CRCT", simbolo.as_ref()].join(" "));
-            } else {
-                gera_mepa(simbolo);
-            }
-        } else {
-            break;
+        if simbolo.tipo == Tokens::AbreParenteses || simbolo.tipo == Tokens::PontoVirgula {
+            break 'write_outer_loop;
         }
     }
+
+    consome(); // consome ';'
 }
 
-fn relop() {
-    let simbolo = prox_simbolo();
-
-    match simbolo.tipo {
-        Tokens::Igual => consome(simbolo, Tokens::Igual),
-        Tokens::Menor => consome(simbolo, Tokens::Menor),
-        Tokens::Maior => consome(simbolo, Tokens::Maior),
-        Tokens::Diferente => consome(simbolo, Tokens::Diferente),
-        Tokens::MaiorIgual => consome(simbolo, Tokens::MaiorIgual),
-        Tokens::MenorIgual => consome(simbolo, Tokens::MenorIgual),
-        _ => consome(simbolo, Tokens::In),
-    }
-}
-
-// simple_expr ::= [+|-] term { addop term }
-fn simple_expr() {
+fn for_statement(){
     let mut simbolo;
-    if (temSinal()){
-        sinal();
-    }
+    let (rotulo, rotulo2);
+    consome(); // consome for
+    let var_i = prox_simbolo().tok;
+    let mut passo;
+    consome(); // consome var_i
+    consome(); // consome :=
 
-    term();
-    simbolo = prox_simbolo();
-    'simple_expr_loop: loop {
-        if simbolo.tipo != Tokens::Mais && simbolo.tipo != Tokens::Menos && simbolo.tipo != Tokens::Or {
-            break 'simple_expr_loop;
-        }
-        addop();
-        term();
+    let mut expressao = vec![prox_simbolo()];
+    consome();
+
+    'for_loop: loop {
         simbolo = prox_simbolo();
+        if simbolo.tipo == Tokens::To {
+            passo = Tokens::To;
+            expressao.push(prox_simbolo());
+            consome();
+            break 'for_loop;
+        } else if simbolo.tipo == Tokens::Downto {
+            passo = Tokens::To;
+            expressao.push(prox_simbolo());
+            consome();
+            break 'for_loop;
+        }
+        expressao.push(prox_simbolo());
+        consome();
     }
-}
 
-// addop ::= + | - | or
-fn addop() {
-    let simbolo = prox_simbolo();
+    expressao_mepa(expressao);
 
-    if simbolo.tipo == Tokens::Mais {
-        let aux = desempilha();
-        empilha(instrucao(Tokens::Mais));
-        empilha(aux);
-        consome(simbolo, Tokens::Mais);
-    } else if simbolo.tipo == Tokens::Menos {
-        let aux = desempilha();
-        empilha(instrucao(Tokens::Menos));
-        empilha(aux);
-        consome(simbolo, Tokens::Menos);
+    gera_mepa(["AMRZ", var_i.to_string().as_ref()].join(" "));
+    cria_rotulo("for".to_string());
+    unsafe {
+        rotulo = contador_rotulo-1;
+        gera_mepa([procura_rotulo_numero(rotulo).as_ref(), "NADA"].join(" "));
+    }
+
+    gera_mepa(["CRVL", parser::procura_var(var_i.clone()).to_string().as_ref()].join(" "));
+
+    expressao = vec![prox_simbolo()];
+    consome();
+
+    'for_loop2: loop {    
+        simbolo = prox_simbolo();
+        println!("{:?}", simbolo);
+        if simbolo.tipo == Tokens::Do {
+            expressao.push(prox_simbolo());
+            consome();
+            break 'for_loop2;
+        }
+        expressao.push(prox_simbolo());
+        consome();
+    }
+
+    expressao_mepa(expressao);
+
+    if passo == Tokens::To {
+        gera_mepa("CMEG".to_string());
     } else {
-        consome(simbolo, Tokens::Or);
+        gera_mepa("CMAG".to_string());
     }
-}
 
-// term ::= factor { mulop factor }
-fn term() {
-    let mut simbolo;
-    factor();
-
-    simbolo = prox_simbolo();
-    'term_loop: loop {
-        if simbolo.tipo != Tokens::Multiplicacao && simbolo.tipo != Tokens::Divisao && simbolo.tipo != Tokens::Div && simbolo.tipo != Tokens::Mod && simbolo.tipo != Tokens::And {
-            break 'term_loop;
-        }
-        mulop();
-
-        factor();
-        simbolo = prox_simbolo();
+    cria_rotulo("do".to_string());
+    unsafe {
+        rotulo2 = contador_rotulo-1;
     }
-}
 
-// mulop ::= * | / | div | mod | and
-fn mulop() {
-    let simbolo = prox_simbolo();
+    gera_mepa(["DSVF", procura_rotulo_numero(rotulo2).as_ref()].join(" "));
 
-    if simbolo.tipo == Tokens::Multiplicacao {
-        let aux = desempilha();
-        empilha(instrucao(Tokens::Multiplicacao));
-        consome(simbolo, Tokens::Multiplicacao);
-    } else if simbolo.tipo == Tokens::Divisao {
-        let aux = desempilha();
-        empilha(instrucao(Tokens::Divisao));
-        consome(simbolo, Tokens::Divisao);
-    } else if simbolo.tipo == Tokens::Div {
-        consome(simbolo, Tokens::Div);
-    } else if simbolo.tipo == Tokens::Mod {
-        consome(simbolo, Tokens::Mod);
+    statement();
+
+    gera_mepa(["CRVL", parser::procura_var(var_i.clone()).to_string().as_ref()].join(" "));
+    gera_mepa("CRCT 1".to_string());
+
+    if passo == Tokens::To {
+        gera_mepa("SOMA".to_string());
     } else {
-        consome(simbolo, Tokens::And);
+        gera_mepa("SUBT".to_string());
     }
-}
 
-/*
-factor ::= identifier infipo
-| number
-| string
-| identifier [( expr_list )]
-| ( expr )
-| not factor
-*/
-fn factor() {
-    let mut simbolo = prox_simbolo();
-    
-    if (ehString()){
-        string();
-    } else if simbolo.tipo == Tokens:: Numero {
-        let aux = prox_simbolo();
-        number();
-        fecha_expr();
-    } else if simbolo.tipo == Tokens::AbreParenteses {
-        empilha('('.to_string());
-        consome(simbolo, Tokens::AbreParenteses);
-        expr();
-        simbolo = prox_simbolo();
-        fecha_expr();
-        consome(simbolo, Tokens::FechaParenteses);
-    } else if simbolo.tipo == Tokens::Not {
-        consome(simbolo, Tokens::Not);
-        factor();
-    } else {
-        if simbolo.tipo == Tokens::True {
-            consome(simbolo, Tokens::True);
-        } else if simbolo.tipo == Tokens::False  {
-            consome(simbolo, Tokens::False);
-        } else {
-            let aux = prox_simbolo();
-            let aux2 = desempilha();
-
-            if (aux2.contains("CRVL")){
-                empilha(["CRVL ",parser::procura_var(aux.tok).to_string().as_ref()].join(""));
-                empilha(aux2);    
-            } else {
-                empilha(aux2);
-                empilha(["CRVL ",parser::procura_var(aux.tok).to_string().as_ref()].join(""));
-            }
-            consome(simbolo, Tokens::Identificador);
-        }
-        simbolo = prox_simbolo();
-        if simbolo.tipo == Tokens::AbreParenteses {
-            empilha('('.to_string());
-            consome(simbolo, Tokens::AbreParenteses);
-            expr_list();
-            simbolo = prox_simbolo();
-            fecha_expr();
-            consome(simbolo, Tokens::FechaParenteses);
-        } else {
-            infipo();
-        }
-    }
+    gera_mepa(["ARMZ", parser::procura_var(var_i).to_string().as_ref()].join(" "));
+    gera_mepa(["DSVS", procura_rotulo_numero(rotulo).as_ref()].join(" "));
+    gera_mepa([procura_rotulo_numero(rotulo2).as_ref(), "NADA"].join(" "));
 }
