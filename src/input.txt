@@ -1,8 +1,9 @@
 program teste;
-var q, p, a, b: Integer;
+var a, x, y, q, p, b: Integer;
     d: Real;
 begin
-    if a > b then q:= p and q
-    else if a < 2*b then p:= true
-    else q:= false;
+    repeat
+        x := x + 1;
+        y := y * x;
+    until x = 10;
 end.

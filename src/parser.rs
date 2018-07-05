@@ -837,8 +837,18 @@ fn repeat_statement(){
     statement();
 
     simbolo = prox_token();
+    'repeat_statement_loop: loop {
+        if simbolo.tipo != Tokens::PontoVirgula {
+            break 'repeat_statement_loop;
+        }
+        consome(simbolo, Tokens::PontoVirgula);
+        statement();
+        simbolo = prox_token();
+    }
+
     consome(simbolo, Tokens::Until);
     expr();
+    println!("{:?}", prox_token());
 }
 
 // for_statement ::= for identifier infipo := expr (to | downto) expr do statement

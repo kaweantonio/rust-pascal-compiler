@@ -177,6 +177,7 @@ fn inicio_programa(){
             Tokens::Read => read_statement(),
             Tokens::Write => write_statement(),
             Tokens::For => for_statement(),
+            Tokens::Repeat => repeat_statement(),
             _ => {},
         }
 
@@ -288,33 +289,6 @@ fn expressao_mepa(expr: Vec<Simbolo>){
     }
 }
 
-// fn if_statement() {
-//     let mut simbolo;
-//     // consome if
-//     consome();
-
-//     let mut expressao = vec![prox_simbolo()];
-//     consome();
-
-//     'if_loop: loop {
-//         simbolo = prox_simbolo();
-//         if simbolo.tipo == Tokens::Then {
-//             expressao.push(prox_simbolo());
-//             consome();
-//             break 'if_loop;
-//         }
-//         expressao.push(prox_simbolo());
-//         consome();
-//     }
-
-//     expressao_mepa(expressao);
-
-//     cria_rotulo("if".to_string());
-//     unsafe {
-//         gera_mepa(["DSVF", procura_rotulo_numero(contador_rotulo-1).as_ref()].join(" "));
-//     }
-// }
-
 fn if_statement() {
     let mut simbolo;
     let rotulo;
@@ -361,26 +335,6 @@ fn if_statement() {
     } else {
         gera_mepa([procura_rotulo_numero(rotulo), "NADA".to_string()].join(" "));
     }
-}
-
-fn else_statement() {
-    let mut simbolo = prox_simbolo();
-    let mut rotulo = 0;
-    unsafe {
-        
-    }
-    // consome else
-    consome();
-
-    cria_rotulo("else".to_string());
-    unsafe {
-        rotulo = contador_rotulo;
-        gera_mepa(["DSVS", procura_rotulo_numero(rotulo-1).as_ref()].join(" "));
-        gera_mepa([procura_rotulo_numero(rotulo-2), "NADA".to_string()].join(" "));
-    }
-
-    statement();
-    // gera_mepa([procura_rotulo_numero(rotulo-1), "NADA".to_string()].join(" "));
 }
 
 fn statement() {
@@ -594,4 +548,50 @@ fn for_statement(){
     gera_mepa(["ARMZ", parser::procura_var(var_i).to_string().as_ref()].join(" "));
     gera_mepa(["DSVS", procura_rotulo_numero(rotulo).as_ref()].join(" "));
     gera_mepa([procura_rotulo_numero(rotulo2).as_ref(), "NADA"].join(" "));
+}
+
+fn repeat_statement(){
+    consome(); // consome repeat
+    let rotulo;
+    let mut simbolo;
+    
+    cria_rotulo("repeat".to_string());
+
+    unsafe {
+        rotulo = contador_rotulo - 1;
+        gera_mepa([procura_rotulo_numero(rotulo), "NADA".to_string()].join("  "));
+    }
+
+    statement();
+    simbolo = prox_simbolo();
+    while prox_simbolo().tipo != Tokens::Until {
+        statement();
+    }
+
+    consome(); // consome until
+
+    let mut expressao = vec![prox_simbolo()];
+    consome();
+    
+    'repeat_statement_inner_loop: loop {
+        simbolo = prox_simbolo();
+        if simbolo.tipo == Tokens::PontoVirgula {
+            expressao.push(prox_simbolo());
+            consome();
+            break 'repeat_statement_inner_loop;
+        }
+
+        expressao.push(prox_simbolo());
+        consome();
+    }
+    
+    expressao_mepa(expressao);
+
+    gera_mepa(["DSVF", procura_rotulo_numero(rotulo).as_ref()].join(" "));
+
+    cria_rotulo("until".to_string());
+    unsafe {
+        let rotulo2 = contador_rotulo - 1;
+        gera_mepa([procura_rotulo_numero(rotulo2), "NADA".to_string()].join(" "));
+    }
 }
