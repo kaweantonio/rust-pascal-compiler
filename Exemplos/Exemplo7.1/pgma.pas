@@ -7,8 +7,8 @@ begin
    begin
       s:=s+m*m;
       write (m,s);
-      m:=m+1
-   end
+      m:=m+1;
+   end;
    
 
    

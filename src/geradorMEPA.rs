@@ -134,6 +134,8 @@ pub fn MEPA(){
 
     inicio_leitura();
 
+    fim_leitura();
+
     print!("\n");
 
     let data = codigoMEPA.lock().unwrap();
@@ -145,7 +147,6 @@ pub fn MEPA(){
 fn inicio_leitura(){
     // program
     gera_mepa("INPP".to_string());
-
     while prox_simbolo().tipo != Tokens::Begin { 
         consome();
     }
@@ -155,10 +156,24 @@ fn inicio_leitura(){
 
     let mut data = parser::codigoAMEM.lock().unwrap();
     for i in 0..data.len(){
-        gera_mepa(data.remove(0));
+        gera_mepa(data[i].to_string());
     }
 
     inicio_programa();
+}
+
+fn fim_leitura() {
+    let mut data = parser::codigoAMEM.lock().unwrap();
+    let mut codigo;
+    let mut j = data.len();
+
+    for i in 0..data.len() {
+        codigo = data[j-i-1].replace("AMEM", "DMEM");
+        println!("{}", codigo);
+        gera_mepa(codigo.to_string());
+    }   
+
+    gera_mepa("PARA".to_string());
 }
 
 fn inicio_programa(){
@@ -403,6 +418,9 @@ fn while_statement(){
         gera_mepa(["DSVS", procura_rotulo_numero(rotulo1-1).as_ref()].join(" "));
         gera_mepa([procura_rotulo_numero(rotulo2-1), "NADA".to_string()].join(" "));
     }
+
+    consome(); // End
+    consome(); // ;
 }
 
 fn read_statement(){
@@ -415,7 +433,7 @@ fn read_statement(){
         match simbolo.tipo {
             Tokens::Identificador => {
                 gera_mepa("LEIT".to_string());
-                gera_mepa(["ARMZ", simbolo.tok.as_ref()].join(" "));
+                gera_mepa(["ARMZ", parser::procura_var(simbolo.tok).to_string().as_ref()].join(" "));
                 consome();
             },
             Tokens::Virgula => consome(),
