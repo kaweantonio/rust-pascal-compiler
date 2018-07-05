@@ -158,10 +158,6 @@ fn inicio_leitura(){
         gera_mepa(data.remove(0));
     }
 
-    cria_rotulo("PROGRAM".to_string());
-
-    gera_mepa(["DSVS", procura_rotulo("PROGRAM".to_string()).as_ref()].join(" "));
-
     inicio_programa();
 }
 
@@ -177,7 +173,6 @@ fn inicio_programa(){
         match simbolo.tipo {
             Tokens::Identificador => atribuicao(),
             Tokens::If => if_statement(),
-            Tokens::Else => else_statement(),
             Tokens::While => while_statement(),
             Tokens::Read => read_statement(),
             Tokens::Write => write_statement(),
@@ -293,10 +288,38 @@ fn expressao_mepa(expr: Vec<Simbolo>){
     }
 }
 
+// fn if_statement() {
+//     let mut simbolo;
+//     // consome if
+//     consome();
+
+//     let mut expressao = vec![prox_simbolo()];
+//     consome();
+
+//     'if_loop: loop {
+//         simbolo = prox_simbolo();
+//         if simbolo.tipo == Tokens::Then {
+//             expressao.push(prox_simbolo());
+//             consome();
+//             break 'if_loop;
+//         }
+//         expressao.push(prox_simbolo());
+//         consome();
+//     }
+
+//     expressao_mepa(expressao);
+
+//     cria_rotulo("if".to_string());
+//     unsafe {
+//         gera_mepa(["DSVF", procura_rotulo_numero(contador_rotulo-1).as_ref()].join(" "));
+//     }
+// }
+
 fn if_statement() {
     let mut simbolo;
-    // consome if
-    consome();
+    let rotulo;
+    let rotulo2;
+    consome(); // consome if
 
     let mut expressao = vec![prox_simbolo()];
     consome();
@@ -316,7 +339,27 @@ fn if_statement() {
 
     cria_rotulo("if".to_string());
     unsafe {
-        gera_mepa(["DSVF", procura_rotulo_numero(contador_rotulo-1).as_ref()].join(" "));
+        rotulo = contador_rotulo - 1;
+        gera_mepa(["DSVF", procura_rotulo_numero(rotulo).as_ref()].join(" "));
+    }
+
+    statement();
+    
+    simbolo = prox_simbolo();
+    if simbolo.tipo == Tokens::Else {
+        consome(); // consome else
+        cria_rotulo("else".to_string());
+        unsafe {
+            rotulo2 = contador_rotulo - 1;
+            gera_mepa(["DSVS", procura_rotulo_numero(rotulo2).as_ref()].join(" "));
+            gera_mepa([procura_rotulo_numero(rotulo), "NADA".to_string()].join(" "));
+        }
+
+        statement();
+
+        gera_mepa([procura_rotulo_numero(rotulo2), "NADA".to_string()].join(" "));
+    } else {
+        gera_mepa([procura_rotulo_numero(rotulo), "NADA".to_string()].join(" "));
     }
 }
 
@@ -353,18 +396,16 @@ fn statement() {
                 }
             }
         },
-        Tokens::If => { 
-            if_statement()
-            
-        },
+        Tokens::If => if_statement(),
         // Tokens::Case => case_statement(),
-        // Tokens::While => while_statement(),
+        Tokens::While => while_statement(),
         // Tokens::Repeat => repeat_statement(),
-        // Tokens::For => for_statement(),
+        Tokens::For => for_statement(),
         // Tokens::With => with_statement(),
         // Tokens::Goto => goto_statement(),
-        // Tokens::Begin => compound_statement(),
-        // Tokens::Read | Tokens::Write => internal_functions(),
+        Tokens::Begin => inicio_programa(),
+        Tokens::Read => read_statement(),
+        Tokens::Write => write_statement(),
         _ => {},
     }
 }
@@ -515,7 +556,6 @@ fn for_statement(){
 
     'for_loop2: loop {    
         simbolo = prox_simbolo();
-        println!("{:?}", simbolo);
         if simbolo.tipo == Tokens::Do {
             expressao.push(prox_simbolo());
             consome();

@@ -1,7 +1,8 @@
 program teste;
-var fatorial, i, n: Integer;
+var q, p, a, b: Integer;
     d: Real;
 begin
-    for i := 2 to n do 
-        fatorial := fatorial * i;
+    if a > b then q:= p and q
+    else if a < 2*b then p:= true
+    else q:= false;
 end.
